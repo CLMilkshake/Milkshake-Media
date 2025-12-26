@@ -58,7 +58,7 @@ async function loadProfile() {
     });
 
     if (res.status === 401) {
-      window.location.href = "login.html";
+      window.location.href = "index.html";
       return;
     }
 
@@ -127,7 +127,7 @@ window.addEventListener("DOMContentLoaded", loadProfile);
         });
 
         // Redirect to login page after logging out
-        window.location.href = 'login.html';
+        window.location.href = 'index.html';
       } catch (err) {
         console.error('Logout failed:', err);
         alert('Logout failed. Try refreshing the page.');
