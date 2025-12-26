@@ -284,11 +284,11 @@ document.getElementById("loadMoreBtn").addEventListener("click", renderPosts);
         modal.style.display = "none";
 
         // Reload posts
-        loadPosts();
+        fetchPosts();
 
       } catch (err) {
         console.error(err);
-        alert("Failed to submit post. You might need to log in again.");
+        alert("Failed to submit post. You might need to login again.");
       }
     });
   </script>
