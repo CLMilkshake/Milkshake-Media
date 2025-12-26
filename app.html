@@ -152,6 +152,8 @@ async function fetchPosts() {
         }
 
         displayedCount = 0;
+        const container = document.getElementById('posts-container');
+        container.innerHTML = "<h1>Recent Posts</h1>"; // clear old posts
         renderPosts(); // render first page
 
     } catch (err) {
@@ -284,6 +286,7 @@ document.getElementById("loadMoreBtn").addEventListener("click", renderPosts);
         modal.style.display = "none";
 
         // Reload posts
+        fetchPosts();
 
       } catch (err) {
         console.error(err);
