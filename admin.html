@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Milkshake Media</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h2 id="title">Milkshake Media</h2>
+    <nav><a href="app.html"><h3>Home</h3></a></nav>
+    <nav><a href="profile.html"><h4>Profile</h4></a></nav>
+    <nav><a><h4>Friends</h4></a></nav>
+    <nav><a><h4>Report A Bug</h4></a></nav>
+
+  </header>
+
+  <b><h2 style="width: 100%; margin-top:2%; text-decoration:underline; background-color:black;">Users</h2></b>
+  <table id="usersTable">
+    <tr>
+      <th>Username</th>
+      <th>Name</th>
+      <th>Description</th>
+      <th>User ID</th>
+      <th>Admin</th>
+    </tr>
+  </table>
+
+  
+  <h2 style="width: 100%; background-color:rgb(0, 0, 0); display:flex; text-align:center; justify-self:center; align-self:center;">Messages</h2>
+
+  <button id="showFlaggedBtn" style="max-width:30%; background-color:rgba(255, 166, 0, 0.555);">Show Only Flagged Messages</button>
+  <table id="messagesList">
+    <tr>
+      <th>Username</th>
+      <th>Name</th>
+      <th>Description</th>
+      <th>Admin</th>
+    </tr>
+  </table>
+
+
+
+<button id="deleteMessages" style="max-width:30%;">Delete All Messages</button>
+
+<textarea id="adminNotification" placeholder="Notification Title" style="max-width: 20%;text-align: center;"></textarea>
+<textarea id="adminNotificationDesc" placeholder="Notification Description" style="text-align: center;"></textarea>
+<button id="sendNotification" style="max-width:30%;">Send Notification</button>
+
+<script>
+  document.getElementById("deleteMessages").onclick = async () => {
+    if (!confirm("Are you sure? This deletes ALL messages. (No it doesn't. This doesn't work right now)")) return;
+
+    const res = await fetch("https://api.clmilkshake.cc/admin/messages", {
+      method: "DELETE",
+      credentials: "include"
+    });
+
+    alert(res.ok ? "Messages deleted" : "Failed");
+  };
+
+  document.getElementById("sendNotification").onclick = async () => {
+    const message = document.getElementById("adminNotification").value.trim();
+    const description = document.getElementById("adminNotificationDesc").value.trim();
+    if (!message) return alert("Enter a message");
+
+    const res = await fetch("https://api.clmilkshake.cc/admin/notify-all", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, description })
+    });
+
+    alert(res.ok ? "Notification sent" : "Failed");
+  };
+</script>
+
+<script>
+  let allMessages = [];
+
+  function renderMessagesFiltered() {
+    let messagesToRender = allMessages;
+
+    if (showOnlyFlagged) {
+        messagesToRender = allMessages.filter(m => m.flagged);
+    }
+
+    renderMessages(messagesToRender);
+}
+  async function loadAdminData() {
+    const [usersRes, messagesRes] = await Promise.all([
+      fetch("https://api.clmilkshake.cc/admin/users", { credentials: "include" }),
+      fetch("https://api.clmilkshake.cc/admin/messages", { credentials: "include" }),
+    ]);
+
+    if (!usersRes.ok || !messagesRes.ok) {
+      alert("Admin access denied");
+      window.location.href = 'app.html';
+      return;
+    }
+
+    const users = await usersRes.json();
+    allMessages = await messagesRes.json();  // store globally
+
+    renderUsers(users);
+    renderMessagesFiltered();
+}
+
+
+  function renderUsers(users) {
+    const table = document.getElementById("usersTable");
+    table.innerHTML = "";
+
+    users.forEach(u => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${u.username}</td>
+        <td>${u.name}</td>
+        <td style="overflow:hidden; max-width:30vw;">${u.description}</td>
+        <td>${u.id}</td>
+        <td>${u.is_admin === 1 ? "Yes" : "No"}</td>
+      `;
+      console.log(u.id)
+      table.appendChild(row);
+    });
+  }
+
+  function renderMessages(messages) {
+    const container = document.getElementById("messagesList");
+    container.innerHTML = "";
+
+    messages.forEach(m => {
+      const div = document.createElement("div");
+      div.className = "admin-message";
+      div.innerHTML = `
+        <p ${m.flagged ? "style='color:red;'" : "style='color:green;'"}">${m.flagged ? "[!]" : "✔"}</p>
+        <strong><h3>${m.username}</h3></strong>
+        <small>${m.timestamp}</small>
+        <p class="admin-message-content">${m.content}</p>
+        <div class="admin-message-controls" style="display:flex; flex-direction:row; margin-top:3vh;">
+        ${m.flagged ? `<button class="delete-btn" data-id="${m.id}" style="background-color:red; max-width:45%; margin-right:5%;">🗑️</button>` : `<button class="delete-btn" data-id="${m.id}" style="max-width:25%; margin-right:5%;">🗑️</button>`}
+        ${m.flagged ? `<button class="ignore-btn" data-id="${m.id}">Ignore Flag</button>` : ''}
+        </div>
+      `;
+      container.appendChild(div);
+    });
+
+    deleteStuff()
+  }
+
+  function deleteStuff()
+  {
+    document.querySelectorAll(".delete-btn").forEach(btn => {
+      btn.onclick = async () => {
+        const postId = btn.dataset.id;
+        console.log(postId);
+
+        if (!confirm("Delete this post permanently?")) return;
+
+        const res = await fetch(`https://api.clmilkshake.cc/posts/${postId}`, {
+          method: "DELETE",
+          credentials: "include"
+        });
+
+        if (!res.ok) {
+          alert("Failed to delete post");
+          return;
+        }
+
+        // Refresh admin list
+        loadAdminData()
+      };
+    });
+    document.querySelectorAll(".ignore-btn").forEach(btn => {
+      btn.onclick = async () => {
+        const postId = btn.dataset.id;
+
+        if (!confirm("Ignore the flag?")) return;
+
+        fetch(`https://api.clmilkshake.cc/posts/${postId}/flag?flag=False`, { 
+          method: "PATCH", 
+          credentials: "include" 
+        });
+
+        if (!res.ok) {
+          alert("Failed to update flag");
+          return;
+        }
+
+        // Refresh admin list
+        loadAdminData()
+      };
+    });
+  }
+
+  
+
+
+
+  let showOnlyFlagged = false;
+
+  const toggleBtn = document.getElementById("showFlaggedBtn");
+  toggleBtn.addEventListener("click", () => {
+      showOnlyFlagged = !showOnlyFlagged;  // flip state
+      toggleBtn.innerText = showOnlyFlagged ? "Show All Messages" : "Show Only Flagged Messages";
+      renderMessagesFiltered(); // render messages with filter
+  });
+
+
+  window.addEventListener("DOMContentLoaded", loadAdminData);
+</script>
+
+</body>
+</html>

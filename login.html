@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login / Sign Up</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .switch-form {
+      margin-top: 10px;
+      color: #007bff;
+      cursor: pointer;
+      text-decoration: underline;
+      display: inline-block;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <!-- Login Form -->
+  <div id="loginForm">
+    <h2>Welcome Back!</h2>
+    <input type="text" id="loginUsername" placeholder="Username (will be public)" autocomplete="username">
+    <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+    <button onclick="login()">Login</button>
+    <div class="switch-form" onclick="showSignup()">Don't have an account? Sign Up</div>
+  </div>
+
+  <!-- Sign Up Form -->
+  <div id="signupForm" class="hidden">
+    <h2>Create Account</h2>
+    <input type="text" id="signupUsername" placeholder="Username*">
+    <input type="text" id="signupName" placeholder="Your Name*">
+    <input type="password" id="signupPassword" placeholder="Password*">
+    <input type="text" id="signupCode" placeholder="Signup Code*" required />
+    <input type="file" id="signupAvatar" accept="image/*">
+    <button onclick="signup()">Sign Up</button>
+    <div class="switch-form" onclick="showLogin()">Already have an account? Login</div>
+  </div>
+</div>
+
+<script>
+  const loginForm = document.getElementById("loginForm");
+  const signupForm = document.getElementById("signupForm");
+
+  function showSignup() {
+    loginForm.classList.add("hidden");
+    signupForm.classList.remove("hidden");
+  }
+
+  function showLogin() {
+    signupForm.classList.add("hidden");
+    loginForm.classList.remove("hidden");
+  }
+
+  // Login function
+  async function login() {
+    const username = document.getElementById("loginUsername").value.trim();
+    const password = document.getElementById("loginPassword").value.trim();
+
+    if (!username || !password) {
+      alert("Please enter both username and password");
+      return;
+    }
+
+    try {
+      const res = await fetch("https://api.clmilkshake.cc/login", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Login failed:", res.status, text);
+        alert("Login failed");
+        return;
+      }
+
+      window.location.href = "app.html";
+
+    } catch (err) {
+      console.error("Network error:", err);
+      alert("Could not connect to server");
+    }
+  }
+
+  // Sign Up function
+  async function signup() {
+    const username = document.getElementById("signupUsername").value.trim();
+    const name = document.getElementById("signupName").value.trim();
+    const password = document.getElementById("signupPassword").value.trim();
+    const avatarFile = document.getElementById("signupAvatar").files[0];
+    const signupCode = document.getElementById("signupCode").value.trim();
+
+    if (!username || !name || !password) {
+      alert("Please fill in all required fields");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("username", username);
+    formData.append("name", name);
+    formData.append("password", password);
+    formData.append("signup_code", signupCode);
+
+    if (avatarFile) formData.append("avatar", avatarFile);
+    
+
+    try {
+      const res = await fetch("https://api.clmilkshake.cc/signup", {
+        method: "POST",
+        body: formData
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Signup failed:", res.status, text);
+        alert("Signup failed: " + text);
+        return;
+      }
+
+      alert("Account created successfully! You can now log in.");
+      showLogin();
+    } catch (err) {
+      console.error("Network error:", err);
+      alert("Could not connect to server");
+    }
+  }
+</script>
+
+</body>
+</html>

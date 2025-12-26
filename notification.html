@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Milkshake Media</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h2 id="title">Milkshake Media</h2>
+    <nav><a href="app.html"><h3>Home</h3></a></nav>
+    <nav><a href="profile.html"><h4>Profile</h4></a></nav>
+    <nav><a href="friends.html"><h4>Friends</h4></a></nav>
+    <nav><a><h4>Report A Bug</h4></a></nav>
+    <div id="notifDropdown" class="notif-dropdown hidden"></div>
+    <nav class="notif-nav">
+    <button id="notifBtn">🔔</button>
+    <span id="notifBadge" class="notif-badge hidden"> O</span>
+  </nav>
+
+  </header>
+  <div id="notifContainer" class="notif-card" style="margin-top: 3%; background-color:rgba(99, 99, 99, 0.356); width:90vw; border-radius:10px;">
+    <p>Loading...</p>
+  </div>
+
+  <script>
+    const container = document.getElementById("notifContainer");
+
+    // Read post_id from URL
+    const params = new URLSearchParams(window.location.search);
+    const notifID = params.get("post_id");
+
+    if (!notifID) {
+      container.innerHTML = "<p>No notification selected.</p>";
+    } else {
+      // Fetch notification details
+      fetch(`https://api.clmilkshake.cc/notifications/${notifID}`, { credentials: "include" })
+        .then(res => {
+          if (!res.ok) throw new Error("Notification not found");
+          return res.json();
+        })
+        .then(async data => {
+          container.innerHTML = `
+            <h1 style="font-size:300%;">${data.type}</h1>
+            <p style="text-align:right; width:80vw;">${data.time}</p>
+            <h3 style="text-align:center;">${data.description || "No description"}</h3>
+          `;
+
+          // Mark as read if unread
+          if (!data.is_read) {
+            await fetch(`https://api.clmilkshake.cc/notifications/read/${notifID}`, {
+              method: "POST",
+              credentials: "include"
+            });
+          }
+        })
+        .catch(err => {
+          container.innerHTML = `<p>Error: ${err.message}</p>`;
+        });
+    }
+  </script>
+
+ 
+
+    
+  <!-- <script> (https version)
+    const logoutButton = document.getElementById('logout-btn');
+
+    logoutButton.addEventListener('click', () => {
+      // Delete all cookies
+      document.cookie.split(";").forEach(cookie => {
+        const eqPos = cookie.indexOf("=");
+        const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+      });
+
+      // Optional: reload page or redirect to login
+      window.location.href = "login.html"; // redirect to login page
+    });
+</script> -->
+</body>
+</html>

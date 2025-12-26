@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Milkshake Media</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h2 id="title">Milkshake Media</h2>
+    <nav><a href="app.html"><h3>Home</h3></a></nav>
+    <nav><a href="profile.html"><h4>Profile</h4></a></nav>
+    <nav><a href="friends.html"><h4>Friends</h4></a></nav>
+    <nav><a><h4>Report A Bug</h4></a></nav>
+
+  </header>
+
+  <div class="placeholder" style="display: flex; flex-direction:row; width:100%;">
+    <div class="profile-card" style="width: 100%;">
+        <div id="profileAvatar" class="avatar">Error</div>
+        <h3 id="profileUsername" style="padding-bottom: 5%; padding-top:10%;"></h3>
+        <p id="profileID" style="padding-bottom: 10%; color:gray;"></p>
+        <input type="text" id="editName" placeholder="Real Name">
+        <input type="text" id="editAvatar" placeholder="Avatar URL or Emoji">
+        <textarea id="editDescription" placeholder="Description"></textarea>
+        <button id="saveProfile">Save Changes</button>
+        <button id="logout-btn" style="margin-top:15%; background-color:red;">Logout</button>
+    </div>
+    <div class="settings" style="width: 100%; margin-top:5%;">
+        <h2>Settings</h2>
+        <div class="settingsOption" style="display: flex; flex-direction:row;">
+          <h4>Only Show Friend's Posts?</h4>
+          <input type="checkbox" id="friendsOnlyToggle" style="margin-left: 5%; padding:3%;" checked>
+        </div>
+    </div>
+  </div>
+
+
+<script>
+  const toggle = document.getElementById("friendsOnlyToggle");
+
+// Load saved preference on page load
+window.addEventListener("DOMContentLoaded", () => {
+    const saved = localStorage.getItem("friendsOnly");
+    toggle.checked = saved === "true";  // saved is a string
+});
+
+// Save preference when toggled
+toggle.addEventListener("change", () => {
+    localStorage.setItem("friendsOnly", toggle.checked);
+});
+
+
+async function loadProfile() {
+  try {
+    const res = await fetch("https://api.clmilkshake.cc/profile", {
+      credentials: "include"
+    });
+
+    if (res.status === 401) {
+      window.location.href = "login.html";
+      return;
+    }
+
+    const profile = await res.json();
+
+    // Display profile info
+    document.getElementById("profileUsername").innerText = profile.username;
+    document.getElementById("profileID").innerText = "Profile Code: " + profile.id;
+    document.getElementById("profileAvatar").innerText = profile.avatar || "🙂";
+    document.getElementById("editName").value = profile.name;
+    document.getElementById("editAvatar").value = profile.avatar || "";
+    document.getElementById("editDescription").value = profile.description || "";
+
+  } catch (err) {
+    console.error(err);
+    alert("Failed to load profile.");
+  }
+}
+
+// Save profile changes
+document.getElementById("saveProfile").addEventListener("click", async () => {
+  const name = document.getElementById("editName").value.trim();
+  const avatar = document.getElementById("editAvatar").value.trim();
+  const description = document.getElementById("editDescription").value.trim();
+
+  if (!name) {
+    alert("Name cannot be empty");
+    return;
+  }
+
+  try {
+    const res = await fetch("https://api.clmilkshake.cc/profile", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, avatar, description})
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text);
+    }
+
+    alert("Profile updated successfully!");
+    loadProfile(); // reload to reflect changes
+
+  } catch (err) {
+    console.error(err);
+    alert("Failed to update profile");
+  }
+});
+
+// Load profile when page loads
+window.addEventListener("DOMContentLoaded", loadProfile);
+</script>
+
+ <script>
+    // Logout Script
+    const logoutButton = document.getElementById('logout-btn');
+
+    logoutButton.addEventListener('click', async () => {
+      try {
+        await fetch('https://api.clmilkshake.cc/logout', {
+          method: 'POST',
+          credentials: 'include' // include cookies
+        });
+
+        // Redirect to login page after logging out
+        window.location.href = 'login.html';
+      } catch (err) {
+        console.error('Logout failed:', err);
+        alert('Logout failed. Try refreshing the page.');
+      }
+    });
+  </script>
+
+</body>
+</html>

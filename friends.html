@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Milkshake Media</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h2 id="title">Milkshake Media</h2>
+    <nav><a href="app.html"><h3>Home</h3></a></nav>
+    <nav><a href="profile.html"><h4>Profile</h4></a></nav>
+    <nav><a><h4>Friends</h4></a></nav>
+    <nav><a><h4>Report A Bug</h4></a></nav>
+    <div id="notifDropdown" class="notif-dropdown hidden"></div>
+    <div id="adminContainer"></div>
+    
+    <nav class="notif-nav">
+    <button id="notifBtn">🔔</button>
+    <span id="notifBadge" class="notif-badge hidden"> O</span>
+  </nav>
+
+  </header>
+
+  <div class="friends" style="display: flex; flex-direction:row; width:95%; text-align: center;">
+    <div class="friendRequestsDiv" style="margin-top: 5vh;">
+      <h3>Friend Requests</h3>
+      <div id="friendRequests" style="margin-top: 5%; background-color:#1B183395; padding:5%; border-radius:10px;">
+        <p>Loading...</p>
+      </div>
+    </div>
+
+    <div class="friends-list" style="width: 60%; margin-left:5%; margin-right:5%; text-align:center; ">
+        <table id="friendsTable" style="border-collapse: separate; /* needed for border-spacing */border-spacing: 2vw 0;    /* horizontal 12px, vertical 0 */ max-width: 60vw; align-items:center; margin: 0 auto; text-align: center;">
+        <tr style="text-align: center;">
+          <th>Username</th>
+        </tr>
+        </table>
+                
+    </div>
+
+    <div class="add-friend" style="margin-top: 5vh;">
+      <h3 style="text-align: center; margin-bottom:3%;">Add a Friend</h3>
+      <input
+        type="text"
+        id="friendCode"
+        placeholder="Enter profile code"
+      />
+      <button id="addFriendBtn">Add Friend</button>
+      <p id="addFriendStatus"></p>
+    </div>
+  </div>
+
+
+
+<script>
+document.getElementById("addFriendBtn").onclick = async () => {
+  const code = document.getElementById("friendCode").value.trim();
+  const status = document.getElementById("addFriendStatus");
+
+  if (!code) {
+    status.innerText = "Enter a profile code";
+    return;
+  }
+
+  try {
+    const res = await fetch("https://api.clmilkshake.cc/friends/add", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      status.innerText = data.detail || "Failed to add friend";
+      return;
+    }
+
+    status.innerText = "Friend added!";
+    document.getElementById("friendCode").value = "";
+
+    // Optional: refresh friends list
+    if (typeof loadFriends === "function") {
+      loadFriends();
+    }
+
+  } catch (err) {
+    console.error(err);
+    status.innerText = "Error adding friend";
+  }
+};
+</script>
+
+
+
+<script>
+async function loadFriends() {
+  const table = document.getElementById("friendsTable");
+
+  try {
+    const res = await fetch("https://api.clmilkshake.cc/friends", {
+      credentials: "include"
+    });
+
+    if (!res.ok) {
+      console.error("Failed to load friends");
+      return;
+    }
+
+    const friends = await res.json();
+
+    // Clear old rows (keep header)
+    table.innerHTML = `
+      <tr>
+        
+      </tr>
+    `;
+
+    friends.forEach(f => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td style="margin-right: 25%; font-size:100%;">${f}</td>
+        <td>
+          <button class="remove-btn" data-username="${f}" style=" background-color:red; text-align:center; box-sizing: border-box; padding-right:20px;">X</button>
+        </td>
+      `;
+      table.appendChild(row);
+    });
+
+    // Attach remove handlers
+    document.querySelectorAll(".remove-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const friend = btn.dataset.username;
+        if (!confirm(`Remove ${friend} from your friends?`)) return;
+
+        const res = await fetch(`https://api.clmilkshake.cc/friends/remove/${encodeURIComponent(friend)}`, {
+          method: "DELETE",
+          credentials: "include"
+        });
+
+        if (!res.ok) return alert("Failed to remove friend");
+
+        // Refresh friends table
+        loadFriends();  // or whatever function loads the friends list
+      });
+    });
+
+
+
+  } catch (err) {
+    console.error("Error loading friends:", err);
+  }
+}
+
+window.addEventListener("DOMContentLoaded", loadFriends);
+</script>
+
+
+
+<script>
+const notifBtn = document.getElementById("notifBtn");
+const notifDropdown = document.getElementById("notifDropdown");
+const notifBadge = document.getElementById("notifBadge");
+
+if (notifBtn) {
+  notifBtn.addEventListener("click", async () => {
+    notifDropdown.classList.toggle("hidden");
+    await loadNotifications();
+  });
+}
+
+
+window.addEventListener("DOMContentLoaded", () => {
+    loadNotifications();
+});
+
+async function loadNotifications() {
+  const res = await fetch("https://api.clmilkshake.cc/notifications", {
+    credentials: "include"
+  });
+
+  if (!res.ok) return;
+
+  const notifs = await res.json();
+  notifDropdown.innerHTML = "";
+
+  const unread = notifs.filter(n => !n.is_read).length;
+  if (unread > 0) {
+    notifBadge.innerText = unread;
+    notifBadge.classList.remove("hidden");
+  } else {
+    notifBadge.classList.add("hidden");
+  }
+
+  notifs.forEach(n => {
+    const div = document.createElement("div");
+    div.className = "notif-item" + (n.is_read ? "" : " unread");
+    div.innerText = `${n.actor}: ${n.type} • ${n.time}`;
+
+    div.onclick = async () => {
+      if (n.description)
+      {
+        window.location.href = `notification.html?post_id=${n.id}`;
+      }
+
+      await fetch(`https://api.clmilkshake.cc/notifications/read/${n.id}`, {
+        method: "POST",
+        credentials: "include"
+      });
+      loadNotifications();
+    };
+
+    notifDropdown.appendChild(div);
+  });
+  document.addEventListener("click", (e) => {
+    if (!notifDropdown.classList.contains("hidden") && !notifDropdown.contains(e.target) && e.target !== notifBtn) {
+        notifDropdown.classList.add("hidden");
+    }
+});
+}
+</script>
+
+
+
+  
+
+
+ 
+
+    
+  <!-- <script> (https version)
+    const logoutButton = document.getElementById('logout-btn');
+
+    logoutButton.addEventListener('click', () => {
+      // Delete all cookies
+      document.cookie.split(";").forEach(cookie => {
+        const eqPos = cookie.indexOf("=");
+        const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+      });
+
+      // Optional: reload page or redirect to login
+      window.location.href = "login.html"; // redirect to login page
+    });
+</script> -->
+
+<script>
+async function loadFriendRequests() {
+  const container = document.getElementById("friendRequests");
+  container.innerHTML = "<p>Loading...</p>";
+
+  try {
+    const res = await fetch("https://api.clmilkshake.cc/friends/requests", {
+      credentials: "include"
+    });
+
+    if (!res.ok) {
+      container.innerHTML = "<p>Failed to load requests</p>";
+      return;
+    }
+
+    const requests = await res.json();
+    container.innerHTML = "";
+
+    if (requests.length === 0) {
+      container.innerHTML = "<p>No friend requests</p>";
+      return;
+    }
+
+    requests.forEach(username => {
+      const div = document.createElement("div");
+      div.className = "friend-request";
+
+      div.innerHTML = `
+        <span><strong>${username}</strong> wants to be friends</span>
+        <button class="accept-btn" style="margin-top:2%;">Accept</button>
+      `;
+
+      div.querySelector(".accept-btn").onclick = async () => {
+        const confirmAccept = confirm(`Accept friend request from ${username}?`);
+        if (!confirmAccept) return;
+
+        const res = await fetch(
+          `https://api.clmilkshake.cc/friends/accept/${username}`,
+          {
+            method: "POST",
+            credentials: "include"
+          }
+        );
+
+        if (!res.ok) {
+          alert("Failed to accept request");
+          return;
+        }
+
+        loadFriendRequests(); // refresh list
+      };
+
+      container.appendChild(div);
+    });
+
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = "<p>Error loading requests</p>";
+  }
+}
+
+window.addEventListener("DOMContentLoaded", loadFriendRequests);
+</script>
+
+<script>
+window.addEventListener("DOMContentLoaded", async () => {
+  const navContainer = document.getElementById("adminContainer");
+  if (!navContainer) return console.error("Nav container not found");
+
+  try {
+    const res = await fetch("https://api.clmilkshake.cc/profile", { credentials: "include" });
+    if (!res.ok) return console.error("Failed to fetch profile");
+
+    const user = await res.json();
+    console.log(user); // Debug: check is_admin value
+
+    // Only add admin nav if the user is an admin
+    if (user.is_admin && user.is_admin !== 0) {
+      const adminNav = document.createElement("nav");
+      adminNav.className = "admin-page";
+
+      adminNav.innerHTML = `
+        <a href="admin.html">
+          <h4 style="background-color: red; padding:10px; border-radius:10px;">Admins</h4>
+        </a>
+      `;
+      navContainer.appendChild(adminNav);
+    }
+  } catch (err) {
+    console.error("Error checking admin status:", err);
+  }
+});
+
+
+</script>
+</body>
+</html>
