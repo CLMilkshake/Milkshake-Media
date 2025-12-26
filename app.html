@@ -313,7 +313,7 @@ document.getElementById("loadMoreBtn").addEventListener("click", renderPosts);
     });
 </script> -->
 
-<script>
+<script style="color: rgb(255, 140, 140);">
 window.addEventListener("DOMContentLoaded", async () => {
   const navContainer = document.getElementById("adminContainer");
   if (!navContainer) return console.error("Nav container not found");
@@ -332,7 +332,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
       adminNav.innerHTML = `
         <a href="admin.html">
-          <h4 style="background-color: red; padding:10px; border-radius:10px;">Admins</h4>
+          <h4 style="color=rgb(255, 140, 140); padding:10px; border-radius:10px;">Admins</h4>
         </a>
       `;
       navContainer.appendChild(adminNav);
