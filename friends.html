@@ -8,16 +8,19 @@
 </head>
 <body>
   <header>
-    <h2 id="title">Milkshake Media</h2>
-    <nav><a href="app.html"><h3>Home</h3></a></nav>
-    <nav><a href="profile.html"><h4>Profile</h4></a></nav>
-    <nav><a href="friends.html"><h4>Friends</h4></a></nav>
-    <nav><a><h4>Report A Bug</h4></a></nav>
-    <div id="notifDropdown" class="notif-dropdown hidden"></div>
-    <div id="adminContainer"></div>
+    <a href="index.html"><h2 id="title">Milkshake Media</h2></a>
+    <button id="menuBtn" class="menu-btn">☰</button>
+    <div id="menu" class="menu">
+      <nav><a href="index.html"><h3>Home</h3></a></nav>
+      <nav><a href="profile.html"><h4>Profile</h4></a></nav>
+      <nav><a href="friends.html"><h4>Friends</h4></a></nav>
+      <nav><a><h4>Report A Bug</h4></a></nav>
+      <nav><div id="adminContainer"></div></nav>
+      <div id="notifDropdown" class="notif-dropdown hidden"></div>
+    </div>
     
     <nav class="notif-nav">
-    <button id="notifBtn">🔔</button>
+    <button id="notifBtn" class="notifBtn">🔔</button>
     <span id="notifBadge" class="notif-badge hidden"> O</span>
   </nav>
 
@@ -55,6 +58,12 @@
 
 
 <script>
+  const menuBtn = document.getElementById("menuBtn");
+  const mainNav = document.getElementById("menu");
+
+  menuBtn.addEventListener("click", () => {
+    mainNav.classList.toggle("active");
+  });
 document.getElementById("addFriendBtn").onclick = async () => {
   const code = document.getElementById("friendCode").value.trim();
   const status = document.getElementById("addFriendStatus");
