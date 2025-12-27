@@ -55,7 +55,8 @@
   </div>
 
 
-<script>  
+<script>
+
   window.addEventListener("DOMContentLoaded", () => {
   const menuBtn = document.getElementById("menuBtn");
   const mainNav = document.getElementById("menu");
@@ -66,6 +67,11 @@
     });
   }
 });
+
+
+  menuBtn.addEventListener("click", () => {
+    mainNav.classList.toggle("active");
+  });
 
 
   let deferredPrompt = null;

@@ -45,6 +45,26 @@
 </div>
 
 <script>
+
+   // The name of the cookie you want to check
+    const cookieName = "shaken_session_token";
+
+    // Check if the cookie exists
+    function checkCookieAndRedirect() {
+      const cookies = document.cookie.split(";").map(c => c.trim());
+      const found = cookies.find(c => c.startsWith(cookieName + "="));
+
+      if (found) {
+        // Cookie exists → redirect
+        window.location.href = "dashboard.html";
+      } else {
+        // Cookie doesn't exist → stay on the page or redirect somewhere else
+        console.log("No session cookie found");
+      }
+    }
+
+    // Run the check on page load
+    window.addEventListener("DOMContentLoaded", checkCookieAndRedirect);
   const loginForm = document.getElementById("loginForm");
   const signupForm = document.getElementById("signupForm");
 
