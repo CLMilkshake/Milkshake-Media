@@ -54,7 +54,11 @@
 
 <script>
 
-  const btn = document.getElementById("installBtn");
+  self.addEventListener("fetch", event => {
+  event.respondWith(fetch(event.request));
+});
+
+const btn = document.getElementById("installBtn");
 
 window.addEventListener("beforeinstallprompt", e => {
   e.preventDefault();
