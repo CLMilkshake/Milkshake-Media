@@ -47,16 +47,31 @@
   <!-- Download card -->
   <div class="card">
     <h2></h2>
-    <button id="loadMoreBtn">Load More</button>
+    <button id="installBtn" hidden>Install App</button>
   </div>
 
 
 
 <script>
 
-  self.addEventListener("fetch", event => {
-  event.respondWith(fetch(event.request));
+  const btn = document.getElementById("installBtn");
+
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  btn.hidden = false;
 });
+
+btn.addEventListener("click", async () => {
+  if (!deferredPrompt) return;
+
+  deferredPrompt.prompt();
+  const result = await deferredPrompt.userChoice;
+  console.log(result.outcome);
+  deferredPrompt = null;
+  btn.hidden = true;
+});
+
 
 const notifBtn = document.getElementById("notifBtn");
 const notifDropdown = document.getElementById("notifDropdown");
