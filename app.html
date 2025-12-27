@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <link rel="manifest" href="/manifest.json">
   <header>
     <h2 id="title">Milkshake Media</h2>
     <nav><a href=""><h3>Home</h3></a></nav>
@@ -52,6 +53,11 @@
 
 
 <script>
+
+  self.addEventListener("fetch", event => {
+  event.respondWith(fetch(event.request));
+});
+
 const notifBtn = document.getElementById("notifBtn");
 const notifDropdown = document.getElementById("notifDropdown");
 const notifBadge = document.getElementById("notifBadge");
