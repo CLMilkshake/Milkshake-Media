@@ -51,30 +51,35 @@
   </div>
 
 
-
 <script>
 
-  self.addEventListener("fetch", event => {
-  event.respondWith(fetch(event.request));
-});
+  let deferredPrompt = null;
 
-const btn = document.getElementById("installBtn");
+  // Register the service worker
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/service-worker.js")
+      .then(() => console.log("SW registered"))
+      .catch(err => console.error("SW failed", err));
+  }
 
-window.addEventListener("beforeinstallprompt", e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  btn.hidden = false;
-});
+  const btn = document.getElementById("installBtn");
 
-btn.addEventListener("click", async () => {
-  if (!deferredPrompt) return;
+  window.addEventListener("beforeinstallprompt", e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    btn.hidden = false;
+  });
 
-  deferredPrompt.prompt();
-  const result = await deferredPrompt.userChoice;
-  console.log(result.outcome);
-  deferredPrompt = null;
-  btn.hidden = true;
-});
+  btn.addEventListener("click", async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const result = await deferredPrompt.userChoice;
+    console.log(result.outcome);
+    deferredPrompt = null;
+    btn.hidden = true;
+  });
+
 
 
 const notifBtn = document.getElementById("notifBtn");
