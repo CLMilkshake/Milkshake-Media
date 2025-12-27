@@ -45,20 +45,14 @@
 </div>
 
 <script>
-
-   // The name of the cookie you want to check
     const cookieName = "shaken_session_token";
-    checkCookieAndRedirect()
-    // Check if the cookie exists
     function checkCookieAndRedirect() {
       const cookies = document.cookie.split(";").map(c => c.trim());
       const found = cookies.find(c => c.startsWith(cookieName + "="));
 
       if (found) {
-        // Cookie exists → redirect
-        window.location.href = "dashboard.html";
+        window.location.href = "app.html";
       } else {
-        // Cookie doesn't exist → stay on the page or redirect somewhere else
         console.log("No session cookie found");
       }
     }
