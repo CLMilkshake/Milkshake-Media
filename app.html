@@ -145,7 +145,20 @@ document.addEventListener("DOMContentLoaded", () => {
 }
 
 
-  enablePushBtn.addEventListener("click", subscribeForPush);
+  enablePushBtn.addEventListener("click", async () => {
+  try {
+    const profileRes = await fetch('https://api.clmilkshake.cc/profile', { credentials: 'include' });
+    if (!profileRes.ok) throw new Error("Failed to get profile");
+
+    const user = await profileRes.json();
+    const username = user.username;
+
+    await subscribeForPush(username);
+  } catch (err) {
+    console.error("Cannot subscribe for push:", err);
+  }
+});
+
 
   // ----- Notifications dropdown -----
   const notifBtn = document.getElementById("notifBtn");
