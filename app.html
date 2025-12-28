@@ -115,30 +115,35 @@ document.addEventListener("DOMContentLoaded", () => {
     return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
   }
 
-  async function subscribeForPush() {
+  async function subscribeForPush(username) {
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return;
 
   const reg = await navigator.serviceWorker.ready;
 
-  // Fetch your VAPID public key from your backend
+  // Fetch VAPID key from backend
   const response = await fetch('https://api.clmilkshake.cc/push/getKey');
-  if (!response.ok) throw new Error("Failed to get VAPID key");
-  let vapidPublicKey = (await response.text()).trim(); // remove whitespace/newlines
+  const vapidPublicKey = await response.text();
 
   const subscription = await reg.pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
   });
 
-  console.log("Push subscription:", subscription);
-
+  // Send subscription to backend with username
   await fetch('https://api.clmilkshake.cc/push/subscribe', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(subscription)
+    credentials: 'include',
+    body: JSON.stringify({
+      username: username,   // <-- add username here
+      subscription: subscription
+    })
   });
+
+  console.log('Push subscription sent for user:', username);
 }
+
 
   enablePushBtn.addEventListener("click", subscribeForPush);
 
