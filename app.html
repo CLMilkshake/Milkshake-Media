@@ -52,119 +52,168 @@
   <div class="card">
     <h2></h2>
     <button id="installBtn" hidden>Install App</button>
+    <button id="enablePush">Enable Notifications</button>
+
   </div>
 
 
-<script>
+  <script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('/service-worker.js');
+      console.log('Service worker registered:', reg);
+    } catch (err) {
+      console.error('Service worker registration failed:', err);
+    }
+  });
+}
+</script>
 
-  window.addEventListener("DOMContentLoaded", () => {
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // ----- Menu toggle -----
   const menuBtn = document.getElementById("menuBtn");
   const mainNav = document.getElementById("menu");
-
   if (menuBtn && mainNav) {
-    menuBtn.addEventListener("click", () => {
-      mainNav.classList.toggle("active");
-    });
+    menuBtn.addEventListener("click", () => mainNav.classList.toggle("active"));
   }
-});
 
+  // ----- Service worker registration -----
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(reg => console.log("Service worker registered:", reg))
+      .catch(err => console.error("Service worker failed:", err));
+  }
 
-  menuBtn.addEventListener("click", () => {
-    mainNav.classList.toggle("active");
-  });
-
-
+  // ----- PWA install prompt -----
   let deferredPrompt = null;
-
-  // Register the service worker
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/service-worker.js")
-      .then(() => console.log("SW registered"))
-      .catch(err => console.error("SW failed", err));
-  }
-
-  const btn = document.getElementById("installBtn");
+  const installBtn = document.getElementById("installBtn");
 
   window.addEventListener("beforeinstallprompt", e => {
     e.preventDefault();
     deferredPrompt = e;
-    btn.hidden = false;
+    installBtn.hidden = false;
   });
 
-  btn.addEventListener("click", async () => {
+  installBtn.addEventListener("click", async () => {
     if (!deferredPrompt) return;
-
     deferredPrompt.prompt();
     const result = await deferredPrompt.userChoice;
-    console.log(result.outcome);
+    console.log("Install prompt outcome:", result.outcome);
     deferredPrompt = null;
-    btn.hidden = true;
+    installBtn.hidden = true;
   });
 
+  // ----- Push notifications -----
+  const enablePushBtn = document.getElementById("enablePush");
 
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+  }
 
-const notifBtn = document.getElementById("notifBtn");
-const notifDropdown = document.getElementById("notifDropdown");
-const notifBadge = document.getElementById("notifBadge");
+  async function subscribeForPush() {
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") return;
 
-if (notifBtn) {
-  notifBtn.addEventListener("click", async () => {
+  const reg = await navigator.serviceWorker.ready;
+
+  // Fetch your VAPID public key from your backend
+  const response = await fetch('https://api.clmilkshake.cc/push/getKey');
+  if (!response.ok) throw new Error("Failed to get VAPID key");
+  let vapidPublicKey = (await response.text()).trim(); // remove whitespace/newlines
+
+  const subscription = await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+  });
+
+  console.log("Push subscription:", subscription);
+
+  await fetch('https://api.clmilkshake.cc/push/subscribe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(subscription)
+  });
+}
+
+  enablePushBtn.addEventListener("click", subscribeForPush);
+
+  // ----- Notifications dropdown -----
+  const notifBtn = document.getElementById("notifBtn");
+  const notifDropdown = document.getElementById("notifDropdown");
+  const notifBadge = document.getElementById("notifBadge");
+
+  async function loadNotifications() {
+    try {
+      const res = await fetch("https://api.clmilkshake.cc/notifications", { credentials: "include" });
+      if (!res.ok) return;
+
+      const notifs = await res.json();
+      notifDropdown.innerHTML = "";
+
+      const unreadCount = notifs.filter(n => !n.is_read).length;
+      if (unreadCount > 0) {
+        notifBadge.innerText = unreadCount;
+        notifBadge.classList.remove("hidden");
+      } else {
+        notifBadge.classList.add("hidden");
+      }
+
+      notifs.forEach(n => {
+        const div = document.createElement("div");
+        div.className = "notif-item" + (!n.is_read ? " unread" : "");
+        div.innerText = `${n.actor}: ${n.type} • ${n.time}`;
+
+        div.onclick = async () => {
+          if (n.description) {
+            window.location.href = `notification.html?post_id=${n.id}`;
+          }
+          await fetch(`https://api.clmilkshake.cc/notifications/read/${n.id}`, { method: "POST", credentials: "include" });
+          loadNotifications();
+        };
+        notifDropdown.appendChild(div);
+      });
+
+    } catch (err) {
+      console.error("Failed to load notifications:", err);
+    }
+  }
+
+  notifBtn?.addEventListener("click", async () => {
     notifDropdown.classList.toggle("hidden");
     await loadNotifications();
   });
-}
 
+  loadNotifications(); // initial load
 
-window.addEventListener("DOMContentLoaded", () => {
-    loadNotifications();
-});
-
-async function loadNotifications() {
-  const res = await fetch("https://api.clmilkshake.cc/notifications", {
-    credentials: "include"
-  });
-
-  if (!res.ok) return;
-
-  const notifs = await res.json();
-  notifDropdown.innerHTML = "";
-
-  const unread = notifs.filter(n => !n.is_read).length;
-  if (unread > 0) {
-    notifBadge.innerText = unread;
-    notifBadge.classList.remove("hidden");
-  } else {
-    notifBadge.classList.add("hidden");
-  }
-  
-
-  notifs.forEach(n => {
-    const div = document.createElement("div");
-    div.className = "notif-item" + (n.is_read ? "" : " unread");
-    div.innerText = `${n.actor}: ${n.type} • ${n.time}`;
-
-    div.onclick = async () => {
-      if (n.description)
-      {
-        window.location.href = `notification.html?post_id=${n.id}`;
-      }
-
-      await fetch(`https://api.clmilkshake.cc/notifications/read/${n.id}`, {
-        method: "POST",
-        credentials: "include"
-      });
-      loadNotifications();
-    };
-
-    notifDropdown.appendChild(div);
-  });
   document.addEventListener("click", (e) => {
     if (!notifDropdown.classList.contains("hidden") && !notifDropdown.contains(e.target) && e.target !== notifBtn) {
-        notifDropdown.classList.add("hidden");
+      notifDropdown.classList.add("hidden");
     }
+  });
+
+  // ----- Admin nav -----
+  const navContainer = document.getElementById("adminContainer");
+  if (navContainer) {
+    fetch("https://api.clmilkshake.cc/profile", { credentials: "include" })
+      .then(res => res.ok ? res.json() : null)
+      .then(user => {
+        if (user?.is_admin) {
+          const adminNav = document.createElement("nav");
+          adminNav.className = "admin-page";
+          adminNav.innerHTML = `<a href="admin.html"><h4 style="color: rgb(255,140,140); padding:10px; border-radius:10px;">Admins</h4></a>`;
+          navContainer.appendChild(adminNav);
+        }
+      })
+      .catch(err => console.error("Error checking admin status:", err));
+  }
 });
-}
 </script>
+
 
 
 
@@ -368,36 +417,6 @@ document.getElementById("loadMoreBtn").addEventListener("click", renderPosts);
     });
 </script> -->
 
-<script style="color: rgb(255, 140, 140);">
-window.addEventListener("DOMContentLoaded", async () => {
-  const navContainer = document.getElementById("adminContainer");
-  if (!navContainer) return console.error("Nav container not found");
 
-  try {
-    const res = await fetch("https://api.clmilkshake.cc/profile", { credentials: "include" });
-    if (!res.ok) return console.error("Failed to fetch profile");
-
-    const user = await res.json();
-    console.log(user); // Debug: check is_admin value
-
-    // Only add admin nav if the user is an admin
-    if (user.is_admin && user.is_admin !== 0) {
-      const adminNav = document.createElement("nav");
-      adminNav.className = "admin-page";
-
-      adminNav.innerHTML = `
-        <a href="admin.html">
-          <h4 style="color=rgb(255, 140, 140); padding:10px; border-radius:10px;">Admins</h4>
-        </a>
-      `;
-      navContainer.appendChild(adminNav);
-    }
-  } catch (err) {
-    console.error("Error checking admin status:", err);
-  }
-});
-
-
-</script>
 </body>
 </html>
