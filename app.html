@@ -53,6 +53,8 @@
     <h2></h2>
     <button id="installBtn" hidden>Install App</button>
     <button id="enablePush">Enable Notifications</button>
+    <button id="disablePush">Disable Notifications</button>
+
 
   </div>
 
@@ -158,6 +160,40 @@ document.addEventListener("DOMContentLoaded", () => {
     console.error("Cannot subscribe for push:", err);
   }
 });
+
+const disablePushBtn = document.getElementById("disablePush");
+
+disablePushBtn.addEventListener("click", async () => {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const subscription = await reg.pushManager.getSubscription();
+
+    if (!subscription) {
+      alert("You are not currently subscribed to notifications.");
+      return;
+    }
+
+    // Unsubscribe from push
+    const unsubscribed = await subscription.unsubscribe();
+    if (unsubscribed) {
+      console.log("Successfully unsubscribed from push notifications.");
+    }
+
+    // Notify backend to remove subscription from database
+    await fetch('https://api.clmilkshake.cc/push/unsubscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ username: YOUR_USERNAME_HERE }) // replace with actual username
+    });
+
+    alert("Notifications have been disabled.");
+  } catch (err) {
+    console.error("Failed to unsubscribe:", err);
+    alert("Failed to disable notifications.");
+  }
+});
+
 
 
   // ----- Notifications dropdown -----
