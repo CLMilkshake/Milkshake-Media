@@ -111,6 +111,10 @@ nav:hover {
   transform: translateY(-3px);
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
+#profilePosts {
+  max-width: 80%;
+  margin: 5%;
+}
 
 /* Post header */
 .post-header {
@@ -434,6 +438,7 @@ button:active {
 
 
 .settings {
+  display: none;
   background: #4417525a;
   padding: 25px;
   height: fit-content;

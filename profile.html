@@ -28,7 +28,7 @@
 
   </header>
   <div class="placeholder" style="display: flex; flex-direction:row; width:100%;">
-    <div class="profile-card" style="width: 100%;">
+    <div class="profile-card" id="profileEditor" style="width: 100%;">
         <div id="profileAvatar" class="avatar">Error</div>
         <h3 id="profileUsername" style="padding-bottom: 5%; padding-top:10%;"></h3>
         <p id="profileID" style="padding-bottom: 10%; color:gray;"></p>
@@ -38,17 +38,19 @@
         <button id="saveProfile">Save Changes</button>
         <button id="logout-btn" style="margin-top:15%; background-color:red;">Logout</button>
     </div>
-    <div class="settings" style="width: 100%; margin-top:5%;">
+    <div class="settings" id="settingsPanel" style="width: 100%; margin-top:5%;">
         <h2>Settings</h2>
         <div class="settingsOption" style="display: flex; flex-direction:row;">
           <h4>Only Show Friend's Posts?</h4>
           <input type="checkbox" id="friendsOnlyToggle" style="margin-left: 5%; padding:3%;" checked>
         </div>
     </div>
+    <div id="profilePosts" class="posts"></div>
   </div>
 
 
 <script>
+  window.addEventListener("DOMContentLoaded", loadProfile);
   const menuBtn = document.getElementById("menuBtn");
   const mainNav = document.getElementById("menu");
 
@@ -70,30 +72,114 @@ toggle.addEventListener("change", () => {
 
 
 async function loadProfile() {
-  try {
-    const res = await fetch("https://api.clmilkshake.cc/profile", {
-      credentials: "include"
-    });
+    const params = new URLSearchParams(window.location.search);
+    const viewedUser = params.get("username"); // get ?username=
 
-    if (res.status === 401) {
-      window.location.href = "index.html";
+    try {
+        // Fetch profile: pass username if viewing another user
+        const url = viewedUser 
+            ? `https://api.clmilkshake.cc/profile?username=${encodeURIComponent(viewedUser)}`
+            : "https://api.clmilkshake.cc/profile";
+        const me = "https://api.clmilkshake.cc/profile";
+
+        const res = await fetch(url, { credentials: "include" });
+
+        if (res.status === 401) {
+            window.location.href = "index.html";
+            return;
+        }
+
+        const profile = await res.json();
+        const isOwnProfile = !viewedUser || viewedUser === me;
+        
+
+        // Update profile info
+        document.getElementById("profileUsername").innerText = profile.username;
+        document.getElementById("profileAvatar").innerText = profile.avatar || "🙂";
+        document.getElementById("profileID").innerText = isOwnProfile ? "Profile Code: " + profile.id : "";
+
+        // Show/hide edit fields
+        const profileEditor = document.getElementById("profileEditor");
+        const settingsPanel = document.getElementById("settingsPanel");
+        if (isOwnProfile) {
+            profileEditor.querySelector("#editName").value = profile.name || "";
+            profileEditor.querySelector("#editAvatar").value = profile.avatar || "";
+            profileEditor.querySelector("#editDescription").value = profile.description || "";
+            settingsPanel.style.display = "block";
+            profileEditor.querySelectorAll("input, textarea, button").forEach(el => el.style.display = "");
+        } else {
+            settingsPanel.style.display = "none";
+            profileEditor.querySelectorAll("input, textarea, button").forEach(el => el.style.display = "none");
+            loadUserPosts(viewedUser);  // call here
+        }
+
+    } catch (err) {
+        console.error(err);
+        alert("Failed to load profile.");
+    }
+}
+
+
+  async function loadOtherUserProfile(username) {
+    const res = await fetch(
+      `https://api.clmilkshake.cc/profile/${encodeURIComponent(username)}`,
+      { credentials: "include" }
+    );
+
+    if (!res.ok) {
+      alert("User not found");
       return;
     }
 
     const profile = await res.json();
 
-    // Display profile info
     document.getElementById("profileUsername").innerText = profile.username;
-    document.getElementById("profileID").innerText = "Profile Code: " + profile.id;
+    document.getElementById("profileID").innerText = "";
     document.getElementById("profileAvatar").innerText = profile.avatar || "🙂";
-    document.getElementById("editName").value = profile.name;
-    document.getElementById("editAvatar").value = profile.avatar || "";
-    document.getElementById("editDescription").value = profile.description || "";
-
-  } catch (err) {
-    console.error(err);
-    alert("Failed to load profile.");
   }
+
+
+  async function loadUserPosts(username) {
+    try {
+        const res = await fetch(`https://api.clmilkshake.cc/posts?username=${encodeURIComponent(username)}`, {
+            credentials: "include"
+        });
+
+        if (!res.ok) {
+            console.error("Failed to load user posts:", res.status);
+            return;
+        }
+
+        const posts = await res.json();
+        const container = document.getElementById("profilePosts");
+        container.innerHTML = "";
+
+        if (!posts.length) {
+            container.innerHTML = "<p>No posts yet.</p>";
+            return;
+        }
+
+        posts.forEach(post => {
+            const div = document.createElement("div");
+            div.className = "post-card";
+            div.innerHTML = `
+                <div class="post-header">
+                    <div class="post-user">
+                        <div class="avatar">${post.avatar || "🙂"}</div>
+                        <span class="real-name">${post.name || ""}</span>
+                        <span class="username">(${post.username})</span>
+                    </div>
+                    <span class="post-time">${post.time}</span>
+                </div>
+                <div class="post-content">
+                    <p>${post.content}</p>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    } catch (err) {
+        console.error("Error loading user posts:", err);
+    }
 }
 
 // Save profile changes
