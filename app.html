@@ -326,6 +326,91 @@ function renderMentions(text) {
 function renderPosts() {
     const container = document.getElementById('posts-container');
 
+    // Clear previous listeners or content if needed
+    // container.innerHTML = "<h1>Recent Posts</h1>"; // optional if you reload fully
+
+    const nextPosts = posts.slice(displayedCount, displayedCount + POSTS_PER_PAGE);
+
+    nextPosts.forEach(post => {
+        const postCard = document.createElement('div');
+        postCard.className = 'post-card';
+        postCard.innerHTML = `
+            <div class="post-header">
+                <div class="post-user">
+                    <div class="avatar">${post.avatar || '🙂'}</div>
+                    <a href="profile.html?username=${encodeURIComponent(post.username)}" class="real-name" style="text-decoration:underline; color:white;">${post.name || ''}</a>
+                    <span class="username">(${post.username})</span>
+                </div>
+                <span class="post-time">${post.time}</span>
+            </div>
+            <div class="post-content">
+                <p>${renderMentions(post.content)}</p>
+            </div>
+            <div class="post-actions">
+                <span class="like-count">${post.like_count || 0}</span>
+                <button class="like-btn ${post.isLiked ? 'liked' : ''}">Like</button>
+                <button class="comment-btn">Comment</button>
+                <button class="share-btn">Share</button>
+                ${post.isMine ? `<button class="delete-btn" data-id="${post.id}">🗑️</button>` : ""}
+            </div>
+        `;
+        container.appendChild(postCard);
+
+        const likeBtn = postCard.querySelector('.like-btn');
+        const likeCountEl = postCard.querySelector('.like-count');
+
+        // Like button click
+        likeBtn.addEventListener('click', async () => {
+            likeBtn.disabled = true;
+
+            const liked = likeBtn.classList.contains('liked');
+            let currentLikes = parseInt(likeCountEl.innerText);
+
+            // Optimistic UI update
+            if (liked) {
+                likeCountEl.innerText = currentLikes - 1;
+                likeBtn.classList.remove('liked');
+            } else {
+                likeCountEl.innerText = currentLikes + 1;
+                likeBtn.classList.add('liked');
+            }
+
+            try {
+                const res = await fetch(`https://api.clmilkshake.cc/posts/${post.id}/like`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: liked ? 'unlike' : 'like' })
+                });
+
+                if (!res.ok) throw new Error('Failed to like/unlike post');
+
+                // Update post object so next render is correct
+                post.like_count = liked ? currentLikes - 1 : currentLikes + 1;
+                post.isLiked = !liked;
+
+            } catch (err) {
+                console.error(err);
+                // revert if failed
+                likeCountEl.innerText = currentLikes;
+                if (liked) likeBtn.classList.add('liked');
+                else likeBtn.classList.remove('liked');
+                alert("Failed to like/unlike the post.");
+            } finally {
+                likeBtn.disabled = false;
+            }
+        });
+    });
+
+    displayedCount += nextPosts.length;
+
+    // Show/hide load more button
+    const loadMoreBtn = document.getElementById("loadMoreBtn");
+    loadMoreBtn.style.display = displayedCount >= posts.length ? "none" : "block";
+}
+
+    const container = document.getElementById('posts-container');
+
     container.addEventListener('click', async (e) => {
         if (!e.target.classList.contains('delete-btn')) return;
 
@@ -362,29 +447,61 @@ function renderPosts() {
     const nextPosts = posts.slice(displayedCount, displayedCount + POSTS_PER_PAGE);
 
     nextPosts.forEach(post => {
-        const postCard = document.createElement('div');
-        postCard.className = 'post-card';
-        postCard.innerHTML = `
-            <div class="post-header">
-                <div class="post-user">
-                    <div class="avatar">${post.avatar || '🙂'}</div>
-                    <a href="profile.html?username=${encodeURIComponent(post.username)}" class="real-name" style="text-decoration:underline; color:white;">${post.name || ''}</a>
-                    <span class="username">(${post.username})</span>
-                </div>
-                <span class="post-time">${post.time}</span>
+    const postCard = document.createElement('div');
+    postCard.className = 'post-card';
+    postCard.innerHTML = `
+        <div class="post-header">
+            <div class="post-user">
+                <div class="avatar">${post.avatar || '🙂'}</div>
+                <a href="profile.html?username=${encodeURIComponent(post.username)}" class="real-name" style="text-decoration:underline; color:white;">${post.name || ''}</a>
+                <span class="username">(${post.username})</span>
             </div>
-            <div class="post-content">
-                <p>${renderMentions(post.content)}</p>
-            </div>
-            <div class="post-actions">
-                <button class="like-btn">Like</button>
-                <button class="comment-btn">Comment</button>
-                <button class="share-btn">Share</button>
-                ${post.isMine ? `<button class="delete-btn" data-id="${post.id}">🗑️</button>` : ""}
-            </div>
-        `;
-        container.appendChild(postCard);
+            <span class="post-time">${post.time}</span>
+        </div>
+        <div class="post-content">
+            <p>${renderMentions(post.content)}</p>
+        </div>
+        <div class="post-actions">
+            <button class="like-btn">Like</button>
+            <span class="like-count">${post.like_count || 0}</span>
+            <button class="comment-btn">Comment</button>
+            <button class="share-btn">Share</button>
+            ${post.isMine ? `<button class="delete-btn" data-id="${post.id}">🗑️</button>` : ""}
+        </div>
+    `;
+    container.appendChild(postCard);
+
+    // ----- Like button click -----
+    const likeBtn = postCard.querySelector('.like-btn');
+    const likeCountEl = postCard.querySelector('.like-count');
+
+    likeBtn.addEventListener('click', async () => {
+        // Disable button immediately
+        likeBtn.disabled = true;
+
+        // Optimistically update UI
+        const currentLikes = parseInt(likeCountEl.innerText);
+        likeCountEl.innerText = currentLikes + 1;
+
+        try {
+            const res = await fetch(`https://api.clmilkshake.cc/posts/${post.id}/like`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            if (!res.ok) {
+                throw new Error('Failed to like post');
+            }
+        } catch (err) {
+            console.error(err);
+            // Revert UI if failed
+            likeCountEl.innerText = currentLikes;
+            likeBtn.disabled = false;
+            alert("Failed to like the post. Try again.");
+        }
     });
+});
+
 
     displayedCount += nextPosts.length;
 
@@ -393,8 +510,6 @@ function renderPosts() {
     
     // Load more button
     loadMoreBtn.addEventListener("click", renderPosts);
-
-}
 
 // Load more button click
 document.getElementById("loadMoreBtn").addEventListener("click", renderPosts);
