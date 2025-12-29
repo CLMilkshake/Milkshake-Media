@@ -319,7 +319,7 @@ async function fetchPosts() {
 function renderMentions(text) {
   return text.replace(
     /@([a-zA-Z0-9_]+)/g,
-    `<a href="/profile.html?username=$1" class="mention">@$1</a>`
+    `<b><a href="/profile.html?username=$1" class="mention">@$1</a></b>`
   );
 }
 
@@ -368,7 +368,7 @@ function renderPosts() {
             <div class="post-header">
                 <div class="post-user">
                     <div class="avatar">${post.avatar || '🙂'}</div>
-                    <span class="real-name">${post.name || ''}</span>
+                    <a href="profile.html?username=${encodeURIComponent(post.username)}" class="real-name" style="text-decoration:underline; color:white;">${post.name || ''}</a>
                     <span class="username">(${post.username})</span>
                 </div>
                 <span class="post-time">${post.time}</span>
