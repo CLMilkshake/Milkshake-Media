@@ -316,6 +316,13 @@ async function fetchPosts() {
     }
 }
 
+function renderMentions(text) {
+  return text.replace(
+    /@([a-zA-Z0-9_]+)/g,
+    `<a href="/profile.html?user=$1" class="mention">@$1</a>`
+  );
+}
+
 function renderPosts() {
     const container = document.getElementById('posts-container');
 
@@ -367,7 +374,7 @@ function renderPosts() {
                 <span class="post-time">${post.time}</span>
             </div>
             <div class="post-content">
-                <p>${post.content}</p>
+                <p>${renderMentions(post.content)}</p>
             </div>
             <div class="post-actions">
                 <button class="like-btn">Like</button>
