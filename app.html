@@ -319,7 +319,7 @@ async function fetchPosts() {
 function renderMentions(text) {
   return text.replace(
     /@([a-zA-Z0-9_]+)/g,
-    `<a href="/profile.html?user=$1" class="mention">@$1</a>`
+    `<a href="/profile.html?username=$1" class="mention">@$1</a>`
   );
 }
 
