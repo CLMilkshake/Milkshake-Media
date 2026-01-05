@@ -321,33 +321,20 @@ window.addEventListener("DOMContentLoaded", loadFriendRequests);
 </script>
 
 <script>
-window.addEventListener("DOMContentLoaded", async () => {
-  const navContainer = document.getElementById("adminContainer");
-  if (!navContainer) return console.error("Nav container not found");
-
-  try {
-    const res = await fetch("https://api.clmilkshake.cc/profile", { credentials: "include" });
-    if (!res.ok) return console.error("Failed to fetch profile");
-
-    const user = await res.json();
-    console.log(user); // Debug: check is_admin value
-
-    // Only add admin nav if the user is an admin
-    if (user.is_admin && user.is_admin !== 0) {
-      const adminNav = document.createElement("nav");
-      adminNav.className = "admin-page";
-
-      adminNav.innerHTML = `
-        <a href="admin.html">
-          <h4 style="color=rgb(255, 140, 140); padding:10px; border-radius:10px;">Admins</h4>
-        </a>
-      `;
-      navContainer.appendChild(adminNav);
-    }
-  } catch (err) {
-    console.error("Error checking admin status:", err);
+const navContainer = document.getElementById("adminContainer");
+  if (navContainer) {
+    fetch("https://api.clmilkshake.cc/profile", { credentials: "include" })
+      .then(res => res.ok ? res.json() : null)
+      .then(user => {
+        if (user?.is_admin) {
+          const adminNav = document.createElement("nav");
+          adminNav.className = "admin-page";
+          adminNav.innerHTML = `<a href="admin.html"><h4 style="color: rgb(255,140,140); padding:10px; border-radius:10px;">Admins</h4></a>`;
+          navContainer.appendChild(adminNav);
+        }
+      })
+      .catch(err => console.error("Error checking admin status:", err));
   }
-});
 
 
 </script>
