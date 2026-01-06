@@ -340,13 +340,13 @@ async function getAvatarByUsername(username) {
         const profile = await res.json();
         const avatar = profile.avatar 
             ? `https://api.clmilkshake.cc/${profile.avatar.replace("uploads/", "")}` 
-            : "/media/images/avatars/default-avatar.webp"; // fallback if no avatar
+            : "api.clmilkshake.cc/media/images/avatars/default-avatar.webp"; // fallback if no avatar
 
         avatarCache[username] = avatar;
         return avatar;
     } catch (err) {
         console.error("Error fetching avatar for", username, err);
-        return "/media/images/avatars/default-avatar.webp"; // fallback
+        return "api.clmilkshake.cc/media/images/avatars/default-avatar.webp"; // fallback
     }
 }
 
