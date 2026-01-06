@@ -28,7 +28,7 @@
   <div class="placeholder" style="display: flex; flex-direction: row; width: 100%;">
     <div class="profile-card" id="profileEditor" style="width: 100%;">
       <div id="profileAvatar" class="avatar">
-        <img id="profileAvatarImg" src="default-avatar.webp" alt="Avatar">
+        <img id="profileAvatarImg" src="" alt="Avatar">
       </div>
       <h3 id="profileUsername" style="padding-bottom: 5%; padding-top:10%;"></h3>
       <p id="profileID" style="padding-bottom: 10%; color:gray;"></p>
@@ -136,7 +136,7 @@
 
         // Update profile info
         document.getElementById("profileUsername").innerText = profile.username;
-        profileAvatarImg.src = avatarUrl(profile.avatar);
+        profileAvatarImg.src = profile.avatar ? avatarUrl(profile.avatar) : "https://api.clmilkshake.cc/media/images/avatars/default-avatar.webp";
         document.getElementById("profileID").innerText = isOwnProfile
           ? "Profile Code: " + profile.id
           : profile.description;
