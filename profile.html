@@ -172,13 +172,13 @@
           if (!res.ok) throw new Error("Failed to fetch profile");
 
           const profile = await res.json();
-          const avatar = profile.avatar ? `https://api.clmilkshake.cc/${profile.avatar.replace("uploads/", "")}` : "api.clmilkshake.cc/media/images/avatars/default-avatar.webp";
+          const avatar = profile.avatar ? `https://api.clmilkshake.cc/${profile.avatar.replace("uploads/", "")}` : "https://api.clmilkshake.cc/media/images/avatars/default-avatar.webp";
 
           avatarCache[username] = avatar; // save in cache
           return avatar;
       } catch (err) {
           console.error("Error fetching avatar for", username, err);
-          return "api.clmilkshake.cc/media/images/avatars/default-avatar.webp";
+          return "https://api.clmilkshake.cc/media/images/avatars/default-avatar.webp";
       }
   }
 
