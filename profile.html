@@ -15,131 +15,176 @@
       <nav><a href="profile.html"><h4>Profile</h4></a></nav>
       <nav><a href="friends.html"><h4>Friends</h4></a></nav>
       <nav><a><h4>Report A Bug</h4></a></nav>
-      <nav><div id="adminContainer"></div></nav>
+      <div id="adminContainer"></div>
       <div id="notifDropdown" class="notif-dropdown hidden"></div>
     </div>
     
     <nav class="notif-nav">
-    <button id="notifBtn" class="notifBtn">🔔</button>
-    <span id="notifBadge" class="notif-badge hidden"> O</span>
-  </nav>
-
+      <button id="notifBtn" class="notifBtn">🔔</button>
+      <span id="notifBadge" class="notif-badge hidden">O</span>
+    </nav>
   </header>
 
-  </header>
-  <div class="placeholder" style="display: flex; flex-direction:row; width:100%;">
+  <div class="placeholder" style="display: flex; flex-direction: row; width: 100%;">
     <div class="profile-card" id="profileEditor" style="width: 100%;">
-        <div id="profileAvatar" class="avatar">Error</div>
-        <h3 id="profileUsername" style="padding-bottom: 5%; padding-top:10%;"></h3>
-        <p id="profileID" style="padding-bottom: 10%; color:gray;"></p>
-        <input type="text" id="editName" placeholder="Real Name">
-        <input type="text" id="editAvatar" placeholder="Avatar URL or Emoji">
-        <textarea id="editDescription" placeholder="Description"></textarea>
-        <button id="saveProfile">Save Changes</button>
-        <button id="logout-btn" style="margin-top:15%; background-color:red;">Logout</button>
+      <div id="profileAvatar" class="avatar">
+        <img id="profileAvatarImg" src="default-avatar.webp" alt="Avatar">
+      </div>
+      <h3 id="profileUsername" style="padding-bottom: 5%; padding-top:10%;"></h3>
+      <p id="profileID" style="padding-bottom: 10%; color:gray;"></p>
+      <input type="text" id="editName" placeholder="Real Name">
+      <textarea id="editDescription" placeholder="Description"></textarea>
+      <button id="saveProfile">Save Changes</button>
+      <button id="logout-btn" style="margin-top:15%; background-color:red;">Logout</button>
     </div>
+
     <div class="settings" id="settingsPanel" style="width: 100%; margin-top:5%;">
-        <h2>Settings</h2>
-        <div class="settingsOption" style="display: flex; flex-direction:row;">
-          <h4>Only Show Friend's Posts?</h4>
-          <input type="checkbox" id="friendsOnlyToggle" style="margin-left: 5%; padding:3%;" checked>
-        </div>
+      <h2>Settings</h2>
+      <div class="settingsOption" style="display: flex; flex-direction: row;">
+        <h4>Only Show Friend's Posts?</h4>
+        <input type="checkbox" id="friendsOnlyToggle" style="margin-left: 5%; padding:3%;" checked>
+      </div>
     </div>
+
     <div id="profilePosts" class="posts"></div>
   </div>
 
+  <div class="avatar-editor">
+    <img id="avatarPreview" src="default-avatar.webp" alt="Avatar" />
+    <button id="changeAvatarBtn">Change Avatar</button>
+    <input type="file" id="avatarInput" accept="image/png,image/jpeg,image/webp" hidden />
+  </div>
 
-<script>
-  window.addEventListener("DOMContentLoaded", loadProfile);
-  const menuBtn = document.getElementById("menuBtn");
-  const mainNav = document.getElementById("menu");
+  <script>
+    // Elements
+    const profileAvatarImg = document.getElementById("profileAvatarImg");
+    const avatarInput = document.getElementById("avatarInput");
+    const toggle = document.getElementById("friendsOnlyToggle");
+    const profileEditor = document.getElementById("profileEditor");
+    const settingsPanel = document.getElementById("settingsPanel");
 
-  menuBtn.addEventListener("click", () => {
-    mainNav.classList.toggle("active");
-  });
-  const toggle = document.getElementById("friendsOnlyToggle");
+    // Avatar helper
+    function avatarUrl(path) {
+      if (!path) return "default-avatar.webp"; // local default
+      return "https://api.clmilkshake.cc/" + path.replace("uploads/", "");
+    }
 
-// Load saved preference on page load
-window.addEventListener("DOMContentLoaded", () => {
-    const saved = localStorage.getItem("friendsOnly");
-    toggle.checked = saved === "true";  // saved is a string
-});
+    // Enable avatar edit if own profile
+    function enableAvatarEdit(isOwnProfile) {
+      profileAvatarImg.style.cursor = isOwnProfile ? "pointer" : "default";
+      profileAvatarImg.title = isOwnProfile ? "Click to change avatar" : "";
+      if (isOwnProfile) {
+        profileAvatarImg.addEventListener("click", () => avatarInput.click());
+      }
+    }
 
-// Save preference when toggled
-toggle.addEventListener("change", () => {
-    localStorage.setItem("friendsOnly", toggle.checked);
-});
+    // Handle avatar upload
+    avatarInput.addEventListener("change", async () => {
+      const file = avatarInput.files[0];
+      if (!file) return;
 
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Avatar must be under 5MB");
+        return;
+      }
 
-async function loadProfile() {
-    const params = new URLSearchParams(window.location.search);
-    const viewedUser = params.get("username"); // get ?username=
+      const formData = new FormData();
+      formData.append("file", file);
 
-    try {
-        // Fetch profile: pass username if viewing another user
-        const url = viewedUser 
-            ? `https://api.clmilkshake.cc/profile?username=${encodeURIComponent(viewedUser)}`
-            : "https://api.clmilkshake.cc/profile";
-        const me = "https://api.clmilkshake.cc/profile";
+      try {
+        const res = await fetch("https://api.clmilkshake.cc/upload-avatar", {
+          method: "POST",
+          body: formData,
+          credentials: "include"
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Upload failed");
+        if (!data.avatar) throw new Error("No avatar returned from server");
 
+        profileAvatarImg.src = avatarUrl(data.avatar) + "?v=" + Date.now();
+        alert("Avatar updated successfully!");
+      } catch (err) {
+        console.error(err);
+        alert(err.message);
+      }
+    });
+
+    // Friends-only toggle
+    window.addEventListener("DOMContentLoaded", () => {
+      toggle.checked = localStorage.getItem("friendsOnly") === "true";
+    });
+    toggle.addEventListener("change", () => {
+      localStorage.setItem("friendsOnly", toggle.checked);
+    });
+
+    // Load profile
+    async function loadProfile() {
+      const params = new URLSearchParams(window.location.search);
+      const viewedUser = params.get("username");
+      const url = viewedUser 
+          ? `https://api.clmilkshake.cc/profile?username=${encodeURIComponent(viewedUser)}`
+          : "https://api.clmilkshake.cc/profile";
+
+      try {
         const res = await fetch(url, { credentials: "include" });
-
-        if (res.status === 401) {
-            window.location.href = "index.html";
-            return;
-        }
+        if (res.status === 401) { window.location.href = "index.html"; return; }
 
         const profile = await res.json();
-        const isOwnProfile = !viewedUser || viewedUser === me;
-        
+        const isOwnProfile = !viewedUser;
+
+        enableAvatarEdit(isOwnProfile);
 
         // Update profile info
         document.getElementById("profileUsername").innerText = profile.username;
-        document.getElementById("profileAvatar").innerText = profile.avatar || "🙂";
-        document.getElementById("profileID").innerText = isOwnProfile ? "Profile Code: " + profile.id : "";
+        profileAvatarImg.src = avatarUrl(profile.avatar);
+        document.getElementById("profileID").innerText = isOwnProfile
+          ? "Profile Code: " + profile.id
+          : profile.description;
 
         // Show/hide edit fields
-        const profileEditor = document.getElementById("profileEditor");
-        const settingsPanel = document.getElementById("settingsPanel");
         if (isOwnProfile) {
-            profileEditor.querySelector("#editName").value = profile.name || "";
-            profileEditor.querySelector("#editAvatar").value = profile.avatar || "";
-            profileEditor.querySelector("#editDescription").value = profile.description || "";
-            settingsPanel.style.display = "block";
-            profileEditor.querySelectorAll("input, textarea, button").forEach(el => el.style.display = "");
+          profileEditor.querySelector("#editName").value = profile.name || "";
+          profileEditor.querySelector("#editDescription").value = profile.description || "";
+          settingsPanel.style.display = "block";
+          profileEditor.querySelectorAll("input, textarea, button").forEach(el => el.style.display = "");
         } else {
-            settingsPanel.style.display = "none";
-            profileEditor.querySelectorAll("input, textarea, button").forEach(el => el.style.display = "none");
-            loadUserPosts(viewedUser);  // call here
+          settingsPanel.style.display = "none";
+          profileEditor.querySelectorAll("input, textarea, button").forEach(el => el.style.display = "none");
+          loadUserPosts(viewedUser);
         }
 
-    } catch (err) {
+      } catch (err) {
         console.error(err);
         alert("Failed to load profile.");
-    }
-}
-
-
-  async function loadOtherUserProfile(username) {
-    const res = await fetch(
-      `https://api.clmilkshake.cc/profile/${encodeURIComponent(username)}`,
-      { credentials: "include" }
-    );
-
-    if (!res.ok) {
-      alert("User not found");
-      return;
+      }
     }
 
-    const profile = await res.json();
+    const avatarCache = {}; // cache so we don't fetch the same user multiple times
 
-    document.getElementById("profileUsername").innerText = profile.username;
-    document.getElementById("profileID").innerText = "";
-    document.getElementById("profileAvatar").innerText = profile.avatar || "🙂";
+  async function getAvatarByUsername(username) {
+      if (avatarCache[username]) return avatarCache[username];
+
+      try {
+          const res = await fetch(`https://api.clmilkshake.cc/profile?username=${encodeURIComponent(username)}`, {
+              credentials: "include"
+          });
+
+          if (!res.ok) throw new Error("Failed to fetch profile");
+
+          const profile = await res.json();
+          const avatar = profile.avatar ? `https://api.clmilkshake.cc/${profile.avatar.replace("uploads/", "")}` : "/media/images/avatars/default-avatar.webp";
+
+          avatarCache[username] = avatar; // save in cache
+          return avatar;
+      } catch (err) {
+          console.error("Error fetching avatar for", username, err);
+          return "/media/images/avatars/default-avatar.webp";
+      }
   }
 
 
-  async function loadUserPosts(username) {
+    // Load user posts
+    async function loadUserPosts(username) {
     try {
         const res = await fetch(`https://api.clmilkshake.cc/posts?username=${encodeURIComponent(username)}`, {
             credentials: "include"
@@ -159,15 +204,16 @@ async function loadProfile() {
             return;
         }
 
-        posts.forEach(post => {
+        for (const post of posts) {
+            const avatar = await getAvatarByUsername(post.username); // fetch avatar
             const div = document.createElement("div");
             div.className = "post-card";
+
             div.innerHTML = `
                 <div class="post-header">
                     <div class="post-user">
-                        <div class="avatar">${post.avatar || "🙂"}</div>
-                        <span class="real-name">${post.name || ""}</span>
-                        <span class="username">(${post.username})</span>
+                        <img class="avatar" src="${avatar}" alt="${post.username}" loading="lazy">
+                        <span class="real-name">${post.username}</span>
                     </div>
                     <span class="post-time">${post.time}</span>
                 </div>
@@ -175,88 +221,70 @@ async function loadProfile() {
                     <p>${post.content}</p>
                 </div>
             `;
+
             container.appendChild(div);
-        });
+        }
     } catch (err) {
         console.error("Error loading user posts:", err);
     }
 }
 
-// Save profile changes
-document.getElementById("saveProfile").addEventListener("click", async () => {
-  const name = document.getElementById("editName").value.trim();
-  const avatar = document.getElementById("editAvatar").value.trim();
-  const description = document.getElementById("editDescription").value.trim();
+    // Save profile changes
+    document.getElementById("saveProfile").addEventListener("click", async () => {
+      const name = document.getElementById("editName").value.trim();
+      const description = document.getElementById("editDescription").value.trim();
+      if (!name) { alert("Name cannot be empty"); return; }
 
-  if (!name) {
-    alert("Name cannot be empty");
-    return;
-  }
+      try {
+        const res = await fetch("https://api.clmilkshake.cc/profile", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, description })
+        });
+        if (!res.ok) throw new Error(await res.text());
 
-  try {
-    const res = await fetch("https://api.clmilkshake.cc/profile", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, avatar, description})
+        alert("Profile updated successfully!");
+        loadProfile();
+      } catch (err) {
+        console.error(err);
+        alert("Failed to update profile");
+      }
     });
 
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(text);
-    }
-
-    alert("Profile updated successfully!");
-    loadProfile(); // reload to reflect changes
-
-  } catch (err) {
-    console.error(err);
-    alert("Failed to update profile");
-  }
-});
-
-// Load profile when page loads
-window.addEventListener("DOMContentLoaded", loadProfile);
-</script>
-
- <script>
-    // Logout Script
-    const logoutButton = document.getElementById('logout-btn');
-
-    logoutButton.addEventListener('click', async () => {
+    // Logout
+    document.getElementById("logout-btn").addEventListener("click", async () => {
       try {
-        await fetch('https://api.clmilkshake.cc/logout', {
-          method: 'POST',
-          credentials: 'include' // include cookies
-        });
-
-        // Redirect to login page after logging out
+        await fetch('https://api.clmilkshake.cc/logout', { method: 'POST', credentials: 'include' });
         window.location.href = 'index.html';
       } catch (err) {
         console.error('Logout failed:', err);
         alert('Logout failed. Try refreshing the page.');
       }
     });
+
+    // Admin nav
+    const navContainer = document.getElementById("adminContainer");
+    if (navContainer) {
+      fetch("https://api.clmilkshake.cc/profile", { credentials: "include" })
+        .then(res => res.ok ? res.json() : null)
+        .then(user => {
+          if (user?.is_admin) {
+            const adminNav = document.createElement("nav");
+            adminNav.className = "admin-page";
+            adminNav.innerHTML = `<a href="admin.html"><h4 style="color: rgb(255,140,140); padding:10px; border-radius:10px;">Admins</h4></a>`;
+            navContainer.appendChild(adminNav);
+          }
+        }).catch(err => console.error("Error checking admin status:", err));
+    }
+
+    // Menu toggle
+    const menuBtn = document.getElementById("menuBtn");
+    const mainNav = document.getElementById("menu");
+    menuBtn.addEventListener("click", () => mainNav.classList.toggle("active"));
+
+    // Load profile on page load
+    window.addEventListener("DOMContentLoaded", loadProfile);
   </script>
-
-<script>
-const navContainer = document.getElementById("adminContainer");
-  if (navContainer) {
-    fetch("https://api.clmilkshake.cc/profile", { credentials: "include" })
-      .then(res => res.ok ? res.json() : null)
-      .then(user => {
-        if (user?.is_admin) {
-          const adminNav = document.createElement("nav");
-          adminNav.className = "admin-page";
-          adminNav.innerHTML = `<a href="admin.html"><h4 style="color: rgb(255,140,140); padding:10px; border-radius:10px;">Admins</h4></a>`;
-          navContainer.appendChild(adminNav);
-        }
-      })
-      .catch(err => console.error("Error checking admin status:", err));
-  }
-
-
-</script>
-
 </body>
 </html>

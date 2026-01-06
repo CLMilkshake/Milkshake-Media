@@ -60,6 +60,7 @@
 
 
   <script>
+    const avatarCache = {}; // cache avatars to avoid repeated requests
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
@@ -323,21 +324,45 @@ function renderMentions(text) {
   );
 }
 
-function renderPosts() {
+async function renderPosts() {
+
+  const avatarCache = {}; // cache avatars to avoid repeated requests
+
+async function getAvatarByUsername(username) {
+    if (avatarCache[username]) return avatarCache[username];
+
+    try {
+        const res = await fetch(`https://api.clmilkshake.cc/profile?username=${encodeURIComponent(username)}`, {
+            credentials: 'include'
+        });
+        if (!res.ok) throw new Error("Failed to fetch profile");
+
+        const profile = await res.json();
+        const avatar = profile.avatar 
+            ? `https://api.clmilkshake.cc/${profile.avatar.replace("uploads/", "")}` 
+            : "/media/images/avatars/default-avatar.webp"; // fallback if no avatar
+
+        avatarCache[username] = avatar;
+        return avatar;
+    } catch (err) {
+        console.error("Error fetching avatar for", username, err);
+        return "/media/images/avatars/default-avatar.webp"; // fallback
+    }
+}
+
     const container = document.getElementById('posts-container');
-
-    // Clear previous listeners or content if needed
-    // container.innerHTML = "<h1>Recent Posts</h1>"; // optional if you reload fully
-
     const nextPosts = posts.slice(displayedCount, displayedCount + POSTS_PER_PAGE);
 
-    nextPosts.forEach(post => {
+    for (const post of nextPosts) {
+        // Fetch avatar for this post
+        const avatar = await getAvatarByUsername(post.username);
+
         const postCard = document.createElement('div');
         postCard.className = 'post-card';
         postCard.innerHTML = `
             <div class="post-header">
                 <div class="post-user">
-                    <div class="avatar">${post.avatar || '🙂'}</div>
+                    <img class="avatar" src="${avatar}" alt="${post.username}">
                     <a href="profile.html?username=${encodeURIComponent(post.username)}" class="real-name" style="text-decoration:underline; color:white;">${post.name || ''}</a>
                     <span class="username">(${post.username})</span>
                 </div>
@@ -356,13 +381,12 @@ function renderPosts() {
         `;
         container.appendChild(postCard);
 
+        // ----- Like button logic -----
         const likeBtn = postCard.querySelector('.like-btn');
         const likeCountEl = postCard.querySelector('.like-count');
 
-        // Like button click
         likeBtn.addEventListener('click', async () => {
             likeBtn.disabled = true;
-
             const liked = likeBtn.classList.contains('liked');
             let currentLikes = parseInt(likeCountEl.innerText);
 
@@ -382,16 +406,11 @@ function renderPosts() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: liked ? 'unlike' : 'like' })
                 });
-
                 if (!res.ok) throw new Error('Failed to like/unlike post');
-
-                // Update post object so next render is correct
                 post.like_count = liked ? currentLikes - 1 : currentLikes + 1;
                 post.isLiked = !liked;
-
             } catch (err) {
                 console.error(err);
-                // revert if failed
                 likeCountEl.innerText = currentLikes;
                 if (liked) likeBtn.classList.add('liked');
                 else likeBtn.classList.remove('liked');
@@ -400,11 +419,10 @@ function renderPosts() {
                 likeBtn.disabled = false;
             }
         });
-    });
+    }
 
     displayedCount += nextPosts.length;
 
-    // Show/hide load more button
     const loadMoreBtn = document.getElementById("loadMoreBtn");
     loadMoreBtn.style.display = displayedCount >= posts.length ? "none" : "block";
 }
