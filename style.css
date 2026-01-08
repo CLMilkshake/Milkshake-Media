@@ -433,11 +433,6 @@ button:active {
    Profile Page
 ------------------------------ */
 
-.placeholder {
-  display: flex;
-  justify-content: space-between;
-}
-
 
 .profile-card{
   display: flex;
@@ -603,7 +598,8 @@ tr {
     margin-left: 70vw;
     max-width: 30%;
   }
-  .post-actions {
-    
+  .placeholder {
+    display: flex;
+    justify-content: space-between;
   }
 }
