@@ -33,6 +33,7 @@
         <span class="close">&times;</span>
         <h3>Create a Post</h3>
         <textarea id="postContent" placeholder="What's shakin'?" rows="4"></textarea>
+        <input type="file" id="postImage" accept="image/*" />
         <button id="submitPost">Post</button>
       </div>
     </div>
@@ -339,7 +340,7 @@ async function getAvatarByUsername(username) {
 
         const profile = await res.json();
         const avatar = profile.avatar 
-            ? `https://api.clmilkshake.cc/${profile.avatar.replace("uploads/", "")}` 
+            ? `https://api.clmilkshake.cc/${profile.avatar}` 
             : "https://api.clmilkshake.cc/media/images/avatars/default-avatar.webp"; // fallback if no avatar
 
         avatarCache[username] = avatar;
@@ -370,6 +371,14 @@ async function getAvatarByUsername(username) {
             </div>
             <div class="post-content">
                 <p>${renderMentions(post.content)}</p>
+                ${post.images && post.images.length ? `
+                  <div class="post-images">
+                    ${post.images.map(img =>
+                      `<img src="https://api.clmilkshake.cc${img}" class="post-image" loading="lazy">`
+                    ).join("")}
+                  </div>
+                ` : ""}
+
             </div>
             <div class="post-actions">
                 <span class="like-count">${post.like_count || 0}</span>
@@ -452,73 +461,46 @@ async function getAvatarByUsername(username) {
             displayedCount = Math.min(displayedCount, posts.length);
 
             // Hide load more if necessary
-            loadMoreBtn.style.display = displayedCount >= posts.length ? "none" : "block";
+            //loadMoreBtn.style.display = displayedCount >= posts.length ? "none" : "block";
 
         } catch (err) {
             console.error(err);
-            alert("Failed to delete post");
+            alert(`Failed to delete post ${err}`);
         }
     });
 
 
-    // Render next chunk
-    const nextPosts = posts.slice(displayedCount, displayedCount + POSTS_PER_PAGE);
+    
 
-    nextPosts.forEach(post => {
-    const postCard = document.createElement('div');
-    postCard.className = 'post-card';
-    postCard.innerHTML = `
-        <div class="post-header">
-            <div class="post-user">
-                <div class="avatar">${post.avatar || '🙂'}</div>
-                <a href="profile.html?username=${encodeURIComponent(post.username)}" class="real-name" style="text-decoration:underline; color:white;">${post.name || ''}</a>
-                <span class="username">(${post.username})</span>
-            </div>
-            <span class="post-time">${post.time}</span>
-        </div>
-        <div class="post-content">
-            <p>${renderMentions(post.content)}</p>
-        </div>
-        <div class="post-actions">
-            <button class="like-btn">Like</button>
-            <span class="like-count">${post.like_count || 0}</span>
-            <button class="comment-btn">Comment</button>
-            <button class="share-btn">Share</button>
-            ${post.isMine ? `<button class="delete-btn" data-id="${post.id}">🗑️</button>` : ""}
-        </div>
-    `;
-    container.appendChild(postCard);
+  // ----- Like button click -----
+      const likeBtn = postCard.querySelector('.like-btn');
+      const likeCountEl = postCard.querySelector('.like-count');
 
-    // ----- Like button click -----
-    const likeBtn = postCard.querySelector('.like-btn');
-    const likeCountEl = postCard.querySelector('.like-count');
+      likeBtn.addEventListener('click', async () => {
+          // Disable button immediately
+          likeBtn.disabled = true;
 
-    likeBtn.addEventListener('click', async () => {
-        // Disable button immediately
-        likeBtn.disabled = true;
+          // Optimistically update UI
+          const currentLikes = parseInt(likeCountEl.innerText);
+          likeCountEl.innerText = currentLikes + 1;
 
-        // Optimistically update UI
-        const currentLikes = parseInt(likeCountEl.innerText);
-        likeCountEl.innerText = currentLikes + 1;
+          try {
+              const res = await fetch(`https://api.clmilkshake.cc/posts/${post.id}/like`, {
+                  method: 'POST',
+                  credentials: 'include'
+              });
 
-        try {
-            const res = await fetch(`https://api.clmilkshake.cc/posts/${post.id}/like`, {
-                method: 'POST',
-                credentials: 'include'
-            });
-
-            if (!res.ok) {
-                throw new Error('Failed to like post');
-            }
-        } catch (err) {
-            console.error(err);
-            // Revert UI if failed
-            likeCountEl.innerText = currentLikes;
-            likeBtn.disabled = false;
-            alert("Failed to like the post. Try again.");
-        }
-    });
-});
+              if (!res.ok) {
+                  throw new Error('Failed to like post');
+              }
+          } catch (err) {
+              console.error(err);
+              // Revert UI if failed
+              likeCountEl.innerText = currentLikes;
+              likeBtn.disabled = false;
+              alert("Failed to like the post. Try again.");
+          }
+      });
 
 
     displayedCount += nextPosts.length;
@@ -561,34 +543,40 @@ document.getElementById("loadMoreBtn").addEventListener("click", renderPosts);
     // Submit post
     submitBtn.addEventListener("click", async () => {
       const content = document.getElementById("postContent").value.trim();
-      if (!content) {
+      const imageFile = document.getElementById("postImage").files[0]; // get selected file
+
+      if (!content && !imageFile) {
         alert("Post cannot be empty");
         return;
       }
 
       try {
+        // Use FormData to handle both text and file
+        const formData = new FormData();
+        formData.append("content", content);
+        if (imageFile) formData.append("image", imageFile);
+
         const res = await fetch("https://api.clmilkshake.cc/posts", {
           method: "POST",
           credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content })
+          body: formData // DO NOT set Content-Type, browser handles it
         });
 
-        if (!res.ok) {
-          throw new Error(`Failed to post: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`Failed to post: ${res.status}`);
 
+        // Reset modal
         document.getElementById("postContent").value = "";
+        document.getElementById("postImage").value = "";
         modal.style.display = "none";
 
-        // Reload posts
-        fetchPosts();
+        fetchPosts(); // reload posts
 
       } catch (err) {
         console.error(err);
         alert("Failed to submit post. You might need to login again.");
       }
     });
+
   </script>
 
 

@@ -29,6 +29,7 @@
   <b><h2 style="width: 100%; margin-top:2%; text-decoration:underline; background-color:black;">Users</h2></b>
   <table id="usersTable">
     <tr>
+      <th>PFP</th>
       <th>Username</th>
       <th>Name</th>
       <th>Description</th>
@@ -43,6 +44,7 @@
   <button id="showFlaggedBtn" style="max-width:30%; background-color:rgba(255, 166, 0, 0.555);">Show Only Flagged Messages</button>
   <table id="messagesList">
     <tr>
+      <th>PFP</th>
       <th>Username</th>
       <th>Name</th>
       <th>Description</th>
@@ -124,22 +126,69 @@
 }
 
 
-  function renderUsers(users) {
-    const table = document.getElementById("usersTable");
-    table.innerHTML = "";
+  async function getAvatarByUsername(username) {
+    const avatarCache = {};
+    if (avatarCache[username]) return avatarCache[username];
 
-    users.forEach(u => {
+    try {
+      const res = await fetch(
+        `https://api.clmilkshake.cc/profile?username=${encodeURIComponent(username)}`,
+        { credentials: "include" }
+      );
+
+      if (!res.ok) throw new Error("Profile fetch failed");
+
+      const profile = await res.json();
+
+      const avatar = profile.avatar
+        ? `https://api.clmilkshake.cc/${profile.avatar.replace("uploads/", "")}`
+        : "https://api.clmilkshake.cc/media/images/avatars/default-avatar.webp";
+
+      avatarCache[username] = avatar;
+      return avatar;
+    } catch (err) {
+      console.error("Avatar fetch failed:", username, err);
+      return "https://api.clmilkshake.cc/media/images/avatars/default-avatar.webp";
+    }
+  }
+
+
+  async function renderUsers(users) {
+    const table = document.getElementById("usersTable");
+
+    table.innerHTML = `
+      <tr>
+        <th>PFP</th>
+        <th>Username</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th>User ID</th>
+        <th>Admin</th>
+      </tr>
+    `;
+
+    for (const u of users) {
+      const avatar = await getAvatarByUsername(u.username);
+
       const row = document.createElement("tr");
+
       row.innerHTML = `
+        <td>
+          <img 
+            src="${avatar}" 
+            class="avatar admin-avatar" 
+            alt="${u.username}"
+          >
+        </td>
         <td>${u.username}</td>
-        <td>${u.name}</td>
-        <td style="overflow:hidden; max-width:30vw;">${u.description}</td>
+        <td>${u.name || ""}</td>
+        <td style="max-width:30vw; overflow:hidden;">${u.description || ""}</td>
         <td>${u.id}</td>
-        <td>${u.is_admin === 1 ? "Yes" : "No"}</td>
+        <td>${u.is_admin ? "Yes" : "No"}</td>
       `;
-      console.log(u.id)
+
       table.appendChild(row);
-    });
+    }
   }
 
   function renderMessages(messages) {

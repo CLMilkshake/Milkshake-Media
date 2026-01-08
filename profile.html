@@ -111,11 +111,20 @@
 
     // Friends-only toggle
     window.addEventListener("DOMContentLoaded", () => {
-      toggle.checked = localStorage.getItem("friendsOnly") === "true";
+      const saved = localStorage.getItem("friendsOnly");
+
+      if (saved === null) {
+        localStorage.setItem("friendsOnly", "false");
+        toggle.checked = false;
+      } else {
+        toggle.checked = saved === "true";
+      }
     });
+
     toggle.addEventListener("change", () => {
-      localStorage.setItem("friendsOnly", toggle.checked);
+      localStorage.setItem("friendsOnly", toggle.checked.toString());
     });
+
 
     // Load profile
     async function loadProfile() {

@@ -141,6 +141,19 @@ nav:hover {
   border: 1px solid #ccc; /* optional thin border */
 }
 
+.post-images {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.post-content img {
+  width: 70%;
+  border-radius: 5%;
+  border: 5px solid #002c5e;
+}
+
 .notif-nav {
   position: relative;
 }
@@ -215,6 +228,11 @@ nav:hover {
   background: #eee;       /* fallback background */
 }
 
+.admin-avatar {
+  width: 75px;
+  height: 75px;
+}
+
 /* The actual image inside */
 #profileAvatarImg {
   width: 100%;
@@ -249,7 +267,7 @@ nav:hover {
 /* Actions */
 .post-actions {
   display: flex;
-  gap: 1rem;
+  gap: 2vw;
   justify-content: flex-start;
 }
 
@@ -282,6 +300,16 @@ nav:hover {
   height: 100%;
   overflow: auto;
   background-color: rgba(0,0,0,0.5);
+}
+
+.modal input, ::file-selector-button  {
+  background: linear-gradient(to bottom, #367bb32f, #16025c2f);
+  border-radius: 6px;
+  border:none;
+  color: rgb(255, 255, 255);
+  width: 100%;
+  height: 6vh;
+  margin-bottom: 5vh;
 }
 
 .modal-content {
@@ -383,7 +411,7 @@ textarea {
 button {
   width: 100%;
   padding: 0.75rem;
-  background: linear-gradient(to bottom, #9536b34a, #73238b4a);
+  background: linear-gradient(to bottom, #9536b38f, #73238b6f);
   border: none;
   border-radius: 8px;
   color: #cfcfcf;
@@ -405,6 +433,12 @@ button:active {
    Profile Page
 ------------------------------ */
 
+.placeholder {
+  display: flex;
+  justify-content: space-between;
+}
+
+
 .profile-card{
   display: flex;
   flex-direction: column;
@@ -414,7 +448,6 @@ button:active {
   padding: 2rem;
   border-radius: 12px;
   width: 100%;
-  max-width: 400px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   margin: 5vw;
 
@@ -569,5 +602,8 @@ tr {
     justify-content: center;
     margin-left: 70vw;
     max-width: 30%;
+  }
+  .post-actions {
+    
   }
 }
