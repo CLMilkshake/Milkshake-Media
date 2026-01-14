@@ -45,20 +45,28 @@
 </div>
 
 <script>
-    const cookieName = "shaken_session_token";
-    function checkCookieAndRedirect() {
-      const cookies = document.cookie.split(";").map(c => c.trim());
-      const found = cookies.find(c => c.startsWith(cookieName + "="));
+  async function checkIfSignedIn() {
+    try {
+      const res = await fetch("https://api.clmilkshake.cc/profile", {
+        credentials: "include"  // ensures the browser sends the HttpOnly cookie
+      });
 
-      if (found) {
+      if (res.ok) {
+        // User is signed in → redirect
         window.location.href = "app.html";
       } else {
-        console.log("No session cookie found");
+        // Not signed in, stay on login page
+        console.log("User not signed in");
       }
+    } catch (err) {
+      console.error("Auth check failed:", err);
     }
+  }
 
-    // Run the check on page load
-    window.addEventListener("DOMContentLoaded", checkCookieAndRedirect);
+// Run on page load
+window.addEventListener("DOMContentLoaded", checkIfSignedIn);
+
+
   const loginForm = document.getElementById("loginForm");
   const signupForm = document.getElementById("signupForm");
 

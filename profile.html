@@ -30,10 +30,12 @@
       <div id="profileAvatar" class="avatar">
         <img id="profileAvatarImg" src="" alt="Avatar">
       </div>
+      <input type="file" id="avatarInput" accept="image/png,image/jpeg,image/webp" hidden />
       <h3 id="profileUsername" style="padding-bottom: 5%; padding-top:10%;"></h3>
       <p id="profileID" style="padding-bottom: 10%; color:gray;"></p>
       <input type="text" id="editName" placeholder="Real Name">
       <textarea id="editDescription" placeholder="Description"></textarea>
+      <button id="friend" onclick="AddFriend()" style="display:none;">Add Friend</button>
       <button id="saveProfile">Save Changes</button>
       <button id="logout-btn" style="margin-top:15%; background-color:red;">Logout</button>
     </div>
@@ -49,12 +51,6 @@
     <div id="profilePosts" class="posts"></div>
   </div>
 
-  <div class="avatar-editor">
-    <img id="avatarPreview" src="default-avatar.webp" alt="Avatar" />
-    <button id="changeAvatarBtn">Change Avatar</button>
-    <input type="file" id="avatarInput" accept="image/png,image/jpeg,image/webp" hidden />
-  </div>
-
   <script>
     // Elements
     const profileAvatarImg = document.getElementById("profileAvatarImg");
@@ -62,10 +58,11 @@
     const toggle = document.getElementById("friendsOnlyToggle");
     const profileEditor = document.getElementById("profileEditor");
     const settingsPanel = document.getElementById("settingsPanel");
+    const friendButton = document.getElementById("friend");
 
     // Avatar helper
     function avatarUrl(path) {
-      if (!path) return "default-avatar.webp"; // local default
+      if (!path) return "/media/images/avatars/default-avatar.webp"; // local default
       return "https://api.clmilkshake.cc/" + path.replace("uploads/", "");
     }
 
@@ -78,7 +75,6 @@
       }
     }
 
-    // Handle avatar upload
     avatarInput.addEventListener("change", async () => {
       const file = avatarInput.files[0];
       if (!file) return;
@@ -108,6 +104,18 @@
         alert(err.message);
       }
     });
+    async function getMyProfile() {
+      const params = new URLSearchParams(window.location.search);
+      const viewedUser = params.get("username");
+      const res = await fetch(`https://api.clmilkshake.cc/profile?username=${encodeURIComponent(viewedUser)}`, {
+        credentials: "include"
+      });
+
+      if (!res.ok) return null;
+
+      cachedProfile = await res.json();
+      return cachedProfile;
+    }
 
     // Friends-only toggle
     window.addEventListener("DOMContentLoaded", () => {
@@ -152,13 +160,16 @@
 
         // Show/hide edit fields
         if (isOwnProfile) {
+
           profileEditor.querySelector("#editName").value = profile.name || "";
           profileEditor.querySelector("#editDescription").value = profile.description || "";
           settingsPanel.style.display = "block";
           profileEditor.querySelectorAll("input, textarea, button").forEach(el => el.style.display = "");
+          friendButton.style.display = "none";
         } else {
           settingsPanel.style.display = "none";
           profileEditor.querySelectorAll("input, textarea, button").forEach(el => el.style.display = "none");
+          friendButton.style.display = "block";
           loadUserPosts(viewedUser);
         }
 
@@ -294,6 +305,45 @@
 
     // Load profile on page load
     window.addEventListener("DOMContentLoaded", loadProfile);
+
+  async function AddFriend() {
+    // Add Friend If Not Own Profile
+    const user = await getMyProfile();
+    const code = user.id;
+    console.log(code);
+    const status = document.getElementById("addFriendStatus");
+
+    if (!code) {
+      status.innerText = "Enter a profile code";
+      return;
+    }
+    try {
+      const res = await fetch("https://api.clmilkshake.cc/friends/add", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert("And error occured :(" + err)
+        return;
+      }
+
+      // Optional: refresh friends list
+      if (typeof loadFriends === "function") {
+        loadFriends();
+      }
+      alert("Sent a friend request!")
+
+    } catch (err) {
+      alert("And error occured :(" + err)
+      console.error(err);
+    }
+  };
+  
   </script>
 </body>
 </html>

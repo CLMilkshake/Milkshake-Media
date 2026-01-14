@@ -212,6 +212,40 @@ nav:hover {
   cursor: pointer;
 }
 
+#recommendations {
+  display: flex;
+  flex-direction: column;
+  width: 90%;
+}
+
+#recommendations a{
+  color: white;
+  text-decoration: none;
+  font-size: 30px;
+  padding-bottom: 3%;
+}
+#recommendations-list {
+  flex-direction: row;
+  display: flex;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+}
+
+.r-avatar {
+  width: 80px;
+  height: 80px;
+  background-color: #002c5e;
+  border-radius: 50%;
+  padding: 3%;
+}
+
+.recommendation-item {
+  padding: 3%;
+  padding-left: 5%;
+  padding-right: 5%;
+  max-width: 40%;
+}
 
 
 
@@ -452,6 +486,7 @@ button:active {
   padding-bottom: 10%;
   padding-top: 100px;
 }
+
 
 /* -----------------------------
    Utility

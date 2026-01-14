@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Milkshake Media</title>
-  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="stylesheet" href="style.css?v=1">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="manifest" href="/manifest.json">
 </head>
@@ -46,7 +46,13 @@
     <h1>Recent Posts</h1>
   </div>
 
-  <h3>Load More Posts?</h3>
+  <div id="recommendations" class="recommendations-sidebar" style="margin-top:5%; margin-bottom:5%; background-color:rgba(0,0,0,0.3); padding:7%; border-radius:10px;">
+    <h2 style="font-size: 40px;"><b>Recommended Friends</b></h2>
+    <hr style="width: 100%; margin-bottom:2%;">
+    <div id="recommendations-list"></div>
+  </div>
+
+  <h2>Load More Posts?</h2>
   <button id="loadMoreBtn" style="width: 30%; margin-top:1%;">Load More</button>
 
   <!-- Download card -->
@@ -60,22 +66,37 @@
   </div>
 
 
-  <script>
-    const avatarCache = {}; // cache avatars to avoid repeated requests
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', async () => {
-    try {
-      const reg = await navigator.serviceWorker.register('/service-worker.js');
-      console.log('Service worker registered:', reg);
-    } catch (err) {
-      console.error('Service worker registration failed:', err);
-    }
-  });
-}
-</script>
-
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+
+  let cachedProfile = null;
+
+  async function getMyProfile() {
+    if (cachedProfile) return cachedProfile;
+
+    const res = await fetch("https://api.clmilkshake.cc/profile", {
+      credentials: "include"
+    });
+
+    if (!res.ok) return null;
+
+    cachedProfile = await res.json();
+    return cachedProfile;
+  }
+  const avatarCache = {}; // cache avatars to avoid repeated requests
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', async () => {
+      try {
+        const reg = await navigator.serviceWorker.register('/service-worker.js');
+        console.log('Service worker registered:', reg);
+      } catch (err) {
+        console.error('Service worker registration failed:', err);
+      }
+    });
+  }
+  document.addEventListener("DOMContentLoaded", () => {
+
+
   // ----- Menu toggle -----
   const menuBtn = document.getElementById("menuBtn");
   const mainNav = document.getElementById("menu");
@@ -151,13 +172,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   enablePushBtn.addEventListener("click", async () => {
   try {
-    const profileRes = await fetch('https://api.clmilkshake.cc/profile', { credentials: 'include' });
-    if (!profileRes.ok) throw new Error("Failed to get profile");
-
-    const user = await profileRes.json();
-    const username = user.username;
-
-    await subscribeForPush(username);
+    const user = await getMyProfile();
+    await subscribeForPush(user.username);
   } catch (err) {
     console.error("Cannot subscribe for push:", err);
   }
@@ -255,10 +271,8 @@ disablePushBtn.addEventListener("click", async () => {
   // ----- Admin nav -----
   const navContainer = document.getElementById("adminContainer");
   if (navContainer) {
-    fetch("https://api.clmilkshake.cc/profile", { credentials: "include" })
-      .then(res => res.ok ? res.json() : null)
-      .then(user => {
-        if (user?.is_admin) {
+    getMyProfile().then(user => {
+      if (user?.is_admin) {
           const adminNav = document.createElement("nav");
           adminNav.className = "admin-page";
           adminNav.innerHTML = `<a href="admin.html"><h4 style="color: rgb(255,140,140); padding:10px; border-radius:10px;">Admins</h4></a>`;
@@ -268,19 +282,71 @@ disablePushBtn.addEventListener("click", async () => {
       .catch(err => console.error("Error checking admin status:", err));
   }
 });
-</script>
 
-
-
-
-  <script>
 let posts = [];          // all posts fetched from server
 let displayedCount = 0;  // how many posts are currently shown
 const POSTS_PER_PAGE = 20; // posts per "page"
 let friendsOnly = false;
 
+async function getAvatarByUsername(username) {
+    if (avatarCache[username]) return avatarCache[username];
+
+    try {
+        const res = await fetch(`https://api.clmilkshake.cc/profile?username=${encodeURIComponent(username)}`, {
+            credentials: 'include'
+        });
+        if (!res.ok) throw new Error("Failed to fetch profile");
+
+        const profile = await res.json();
+        const avatar = profile.avatar 
+            ? `https://api.clmilkshake.cc/${profile.avatar}` 
+            : "https://api.clmilkshake.cc/media/images/avatars/default-avatar.webp"; // fallback if no avatar
+
+        avatarCache[username] = avatar;
+        return avatar;
+    } catch (err) {
+        console.error("Error fetching avatar for", username, err);
+        return "https://api.clmilkshake.cc/media/images/avatars/default-avatar.webp"; // fallback
+    }
+}
+
+async function loadRecommendations() {
+  try {
+    const res = await fetch('https://api.clmilkshake.cc/recommendations', {
+      credentials: 'include'
+    });
+    if (!res.ok) throw new Error("Failed to fetch recommendations");
+
+    const recommendations = await res.json();
+    const list = document.getElementById('recommendations-list');
+    list.innerHTML = "";
+
+    for (const user of recommendations) {
+      const div = document.createElement('div');
+      div.className = 'recommendation-item';
+
+      // 🔥 await the avatar
+      const avatar = await getAvatarByUsername(user.username);
+
+      div.innerHTML = `
+        <a href="profile.html?username=${encodeURIComponent(user.username)}">
+          <img src="${avatar}" alt="${user.username}" class="r-avatar">
+          <h4>${user.name || user.username}</h4>
+        </a>
+      `;
+
+      list.appendChild(div);
+    }
+  } catch (err) {
+    console.error("Error loading recommendations:", err);
+    document.getElementById('recommendations-list').innerHTML =
+      "<p style='color:#f87171;'>Failed to load recommendations.</p>";
+  }
+}
+
 // Load saved preference
 window.addEventListener("DOMContentLoaded", () => {
+    loadRecommendations();
     const saved = localStorage.getItem("friendsOnly");
     friendsOnly = saved === "true";
     fetchPosts(); // load posts with pagination
@@ -298,8 +364,8 @@ async function fetchPosts() {
         posts = await postsRes.json();
         const friends = friendsOnly ? await friendsRes.json() : [];
 
-        const profileRes = await fetch('https://api.clmilkshake.cc/profile', { credentials: 'include' });
-        const me = profileRes.ok ? (await profileRes.json()).username : null;
+        const user = await getMyProfile();
+        const me = user?.username;
 
         // Apply flagged + friends filter upfront
         posts = posts.filter(post => post.flagged != true && post.flagged != "True");
@@ -325,38 +391,15 @@ function renderMentions(text) {
   );
 }
 
+
 async function renderPosts() {
-
-  const avatarCache = {}; // cache avatars to avoid repeated requests
-
-async function getAvatarByUsername(username) {
-    if (avatarCache[username]) return avatarCache[username];
-
-    try {
-        const res = await fetch(`https://api.clmilkshake.cc/profile?username=${encodeURIComponent(username)}`, {
-            credentials: 'include'
-        });
-        if (!res.ok) throw new Error("Failed to fetch profile");
-
-        const profile = await res.json();
-        const avatar = profile.avatar 
-            ? `https://api.clmilkshake.cc/${profile.avatar}` 
-            : "https://api.clmilkshake.cc/media/images/avatars/default-avatar.webp"; // fallback if no avatar
-
-        avatarCache[username] = avatar;
-        return avatar;
-    } catch (err) {
-        console.error("Error fetching avatar for", username, err);
-        return "https://api.clmilkshake.cc/media/images/avatars/default-avatar.webp"; // fallback
-    }
-}
 
     const container = document.getElementById('posts-container');
     const nextPosts = posts.slice(displayedCount, displayedCount + POSTS_PER_PAGE);
 
     for (const post of nextPosts) {
         // Fetch avatar for this post
-        const avatar = await getAvatarByUsername(post.username);
+        const avatar = "https://api.clmilkshake.cc" + post.avatar;
 
         const postCard = document.createElement('div');
         postCard.className = 'post-card';
@@ -576,6 +619,7 @@ document.getElementById("loadMoreBtn").addEventListener("click", renderPosts);
         alert("Failed to submit post. You might need to login again.");
       }
     });
+
 
   </script>
 
