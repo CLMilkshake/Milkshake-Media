@@ -318,7 +318,7 @@ nav:hover {
 
 .post-actions button:hover {
   background: #1B1833;
-  color: #AB4459;
+  color: #9744ab;
   transform: scale(1.05);
 }
 
@@ -572,6 +572,13 @@ tr {
   cursor: pointer;
 }
 
+.friends {
+  display: flex; 
+  flex-direction:row; 
+  width:95%; 
+  text-align: center;
+}
+
 @media (max-width: 600px) {
   header {
     flex-direction: column;
@@ -644,5 +651,11 @@ tr {
   }
   #recommendations a{
     font-size: 15px;
+  }
+  .friends {
+    flex-direction: column;
+  }
+  .friends-list {
+    align-self: center;
   }
 }

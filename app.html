@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Milkshake Media</title>
-  <link rel="stylesheet" href="style.css?v=1">
+  <link rel="stylesheet" href="style.css?v=2">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="manifest" href="/manifest.json">
 </head>
@@ -425,10 +425,10 @@ async function renderPosts() {
             </div>
             <div class="post-actions">
                 <span class="like-count">${post.like_count || 0}</span>
-                <button class="like-btn ${post.isLiked ? 'liked' : ''}">Like</button>
+                <button class="like-btn ${post.isLiked ? 'liked' : ''}" style="${post.isMine ? 'display:none;' : 'display:block;'}">Like</button>
                 <button class="comment-btn">Comment</button>
                 <button class="share-btn">Share</button>
-                ${post.isMine ? `<button class="delete-btn" data-id="${post.id}">🗑️</button>` : ""}
+                ${post.isMine ? `<button class="delete-btn" data-id="${post.id}" style="background:rgb(105, 38, 64);">🗑️</button>` : ""}
             </div>
         `;
         container.appendChild(postCard);

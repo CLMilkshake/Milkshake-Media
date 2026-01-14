@@ -40,7 +40,7 @@
       <button id="logout-btn" style="margin-top:15%; background-color:red;">Logout</button>
     </div>
 
-    <div class="settings" id="settingsPanel" style="width: 100%; margin-top:5%;">
+    <div class="settings" id="settingsPanel" style="width: 100%; margin-top:5%; display:none;">
       <h2>Settings</h2>
       <div class="settingsOption" style="display: flex; flex-direction: row;">
         <h4>Only Show Friend's Posts?</h4>
@@ -163,7 +163,8 @@
 
           profileEditor.querySelector("#editName").value = profile.name || "";
           profileEditor.querySelector("#editDescription").value = profile.description || "";
-          settingsPanel.style.display = "block";
+          //settingsPanel.style.display = "block";
+          settingsPanel.style.display = "none";
           profileEditor.querySelectorAll("input, textarea, button").forEach(el => el.style.display = "");
           friendButton.style.display = "none";
         } else {
