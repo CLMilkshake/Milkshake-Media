@@ -637,4 +637,12 @@ tr {
     display: flex;
     justify-content: space-between;
   }
+
+  .r-avatar {
+    width: 40px;
+    height: 40px;
+  }
+  #recommendations a{
+    font-size: 15px;
+  }
 }
