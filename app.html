@@ -426,11 +426,16 @@ async function renderPosts() {
             <div class="post-actions">
                 <span class="like-count">${post.like_count || 0}</span>
                 <button class="like-btn ${post.isLiked ? 'liked' : ''}" style="${post.isMine ? 'display:none;' : 'display:block;'} background:#251833;">Like</button>
-                <button class="comment-btn" style="background:#332f18">Comment</button>
-                <button class="share-btn" style="background:#183133;">Share</button>
+                
+
+
                 ${post.isMine ? `<button class="delete-btn" data-id="${post.id}" style="background:rgb(105, 38, 64);">🗑️</button>` : ""}
             </div>
         `;
+          
+        //  Comment / Share buttons that need to be put in the gap above when they're added
+        //  <button class="comment-btn" style="background:#332f18">Comment</button>
+        //  <button class="share-btn" style="background:#183133;">Share</button>
         container.appendChild(postCard);
 
         // ----- Like button logic -----

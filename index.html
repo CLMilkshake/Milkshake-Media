@@ -17,33 +17,40 @@
   </style>
 </head>
 <body>
+  <nav style="display: flex; flex-direction:column; background-color:rgba(0, 0, 0, 0.2); width:100%; padding:2%;">
+    <h1 style=" font-size:50px;">Milkshake Media</h1>
+    <h3>Personal Social Media</h3>
+  </nav>
+  <div class="card" style="margin-top: 4%; margin-bottom:4%;">
+    <!-- Login -->
+    <div id="loginForm">
+      <h2>Welcome Back!</h2>
+      <input type="text" id="loginUsername" placeholder="Username (Case Sensitive)" autocomplete="username">
+      <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+      <button onclick="login()">Login</button>
+      <div class="switch-form" onclick="showSignup()">Don't have an account? Sign Up</div>
+    </div>
 
-  <h1 style="margin-top: 5%; font-size:50px;">Milkshake Media</h1>
-
-<div class="card">
-  <!-- Login Form -->
-  <div id="loginForm">
-    <h2>Welcome Back!</h2>
-    <input type="text" id="loginUsername" placeholder="Username (Case Sensitive)" autocomplete="username">
-    <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
-    <button onclick="login()">Login</button>
-    <div class="switch-form" onclick="showSignup()">Don't have an account? Sign Up</div>
+    <!-- Sign Up -->
+    <div id="signupForm" class="hidden">
+      <h2>Create Account</h2>
+      <p style="text-align: center; margin-bottom:5%; color:rgb(196, 105, 0);">[!] Username and Password are Case Sensitive</p>
+      <input type="text" id="signupUsername" placeholder="Username* (will be public)">
+      <input type="text" id="signupName" placeholder="Your Name* (also public)">
+      <input type="password" id="signupPassword" placeholder="Password*">
+      <input type="text" id="signupCode" placeholder="Signup Code*" required />
+      <p style="text-align: center; padding:3%; color:rgb(151, 151, 151)">You can set a profile picture after you make your account</p>
+      <button onclick="signup()">Sign Up</button>
+      <div class="switch-form" onclick="showLogin()">Already have an account? Login</div>
+    </div>
   </div>
-
-  <!-- Sign Up Form -->
-  <div id="signupForm" class="hidden">
-    <h2>Create Account</h2>
-    <p style="text-align: center; margin-bottom:5%; color:rgb(196, 105, 0);">[!] Username and Password are Case Sensitive</p>
-    <input type="text" id="signupUsername" placeholder="Username* (will be public)">
-    <input type="text" id="signupName" placeholder="Your Name*">
-    <input type="password" id="signupPassword" placeholder="Password*">
-    <input type="text" id="signupCode" placeholder="Signup Code*" required />
-    <input type="file" id="signupAvatar" accept="image/*">
-    <button onclick="signup()">Sign Up</button>
-    <div class="switch-form" onclick="showLogin()">Already have an account? Login</div>
+  <div class="temp" style="background-color: rgba(0, 0, 0, 0.2); display:flex; flex-direction:column; align-items:center;">
+    <h1 style="margin-top: 2%;">What is this?</h1>
+    <hr style="width: 30%; margin-bottom:2%;">
+    <h3 style="padding-left: 3%; padding-right: 3%; padding-bottom:5%; color:rgb(184, 184, 184); text-align:center;">This is a personal project I started because I was tired of using social media that is probably using my data for things I don't know or don't like. It is private*, so the only people who should have access are people I invite. (Private meaning I control how it all gets sent, and everything is saved on my personal devices. Don't post anything too sensitive like passwords or addresses still, it's just a good habit to have while online.) Depending on the code you sign up with, you will be put into pre-made groups that will recommend people in the same group as you to add to your friends list, aka the people in your family. You can friend people outside of that group too. You just need their profile code. For example, I am in a different group than anyone, so to friend me you need to put in my friend code, "1", on the friends page. Your posts can only be seen by people you're friends with. It's a very basic app right now, but it doesn't have to stay that way. That's where I need your help.</h3>
+    <h3 style="padding-left: 3%; padding-right: 3%; padding-bottom:5%; color:rgb(184, 184, 184); text-align:center;">I don't know exactly what this project needs, if it's even worth continually working on it, or if it was just something I learned and should move on from. If you guys enjoy using it and find ways to make it useful, I will happily keep working on it. There is a limited amount of storage currently, meaning if there are too many posts (picture take up a lot of space), we'd have to figure something out. I also don't know what features it needs next, or what's still broken. So I need you guys to use it and tell me what would make it better for you to use, whether that be new things, things that are broken, or things that just seem weird to use so that I can decide how much work and money I should put into this. It will feel weird to use for a bit as we figure out what needs to be fixed, but ideally it becomes our own personal Facebook but better soon.</h3>
+    <h3 style="padding-left: 3%; padding-right: 3%; padding-bottom:5%; color:rgb(184, 184, 184); text-align:center;">Thank you for trying it out. Hopefully we can grow this into something that is useful and fun to use all at once. Let me know if you have any ideas by using the "Report a Bug" button on the top of the website when you log in.</h3>
   </div>
-</div>
-
 <script>
   async function checkIfSignedIn() {
     try {
