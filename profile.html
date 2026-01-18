@@ -40,11 +40,16 @@
       <button id="logout-btn" style="margin-top:15%; background-color:red;">Logout</button>
     </div>
 
-    <div class="settings" id="settingsPanel" style="width: 100%; margin-top:5%; display:none;">
+    <div class="settings" id="settingsPanel" style="width: 100%; margin-top:5%; display:none; flex-direction:column;">
       <h2>Settings</h2>
       <div class="settingsOption" style="display: flex; flex-direction: row;">
-        <h4>Only Show Friend's Posts?</h4>
-        <input type="checkbox" id="friendsOnlyToggle" style="margin-left: 5%; padding:3%;" checked>
+        <button id="installBtn" hidden style="margin: 2%;">Install App</button>
+      </div>
+      <div class="settingsOption" style="display: flex; flex-direction: row;">
+        <!--<h4>Only Show Friend's Posts?</h4>
+        <input type="checkbox" id="friendsOnlyToggle" style="margin-left: 5%; padding:3%;" checked>-->
+        <button id="enablePush" style="margin: 2%;">Enable Notifications</button>
+        <button id="disablePush" style="margin: 2%;">Disable Notifications</button>
       </div>
     </div>
 
@@ -118,20 +123,20 @@
     }
 
     // Friends-only toggle
-    window.addEventListener("DOMContentLoaded", () => {
-      const saved = localStorage.getItem("friendsOnly");
+    //window.addEventListener("DOMContentLoaded", () => {
+    //  const saved = localStorage.getItem("friendsOnly");
 
-      if (saved === null) {
-        localStorage.setItem("friendsOnly", "false");
-        toggle.checked = false;
-      } else {
-        toggle.checked = saved === "true";
-      }
-    });
+    //  if (saved === null) {
+    //    localStorage.setItem("friendsOnly", "false");
+    //    toggle.checked = false;
+    //  } else {
+    //    toggle.checked = saved === "true";
+    //  }
+    //});
 
-    toggle.addEventListener("change", () => {
-      localStorage.setItem("friendsOnly", toggle.checked.toString());
-    });
+    //toggle.addEventListener("change", () => {
+    //  localStorage.setItem("friendsOnly", toggle.checked.toString());
+    //});
 
 
     // Load profile
@@ -163,8 +168,8 @@
 
           profileEditor.querySelector("#editName").value = profile.name || "";
           profileEditor.querySelector("#editDescription").value = profile.description || "";
-          //settingsPanel.style.display = "block";
-          settingsPanel.style.display = "none";
+          settingsPanel.style.display = "flex";
+          //settingsPanel.style.display = "none";
           profileEditor.querySelectorAll("input, textarea, button").forEach(el => el.style.display = "");
           friendButton.style.display = "none";
         } else {
@@ -344,6 +349,149 @@
       console.error(err);
     }
   };
+let cachedProfile = null;
+
+  async function getMyProfile() {
+    if (cachedProfile) return cachedProfile;
+
+    const res = await fetch("https://api.clmilkshake.cc/profile", {
+      credentials: "include"
+    });
+
+    if (!res.ok) return null;
+
+    cachedProfile = await res.json();
+    return cachedProfile;
+  }
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', async () => {
+      try {
+        const reg = await navigator.serviceWorker.register('/service-worker.js');
+        console.log('Service worker registered:', reg);
+      } catch (err) {
+        console.error('Service worker registration failed:', err);
+      }
+    });
+  }
+  document.addEventListener("DOMContentLoaded", () => {
+
+
+  // ----- Menu toggle -----
+  const menuBtn = document.getElementById("menuBtn");
+  const mainNav = document.getElementById("menu");
+  if (menuBtn && mainNav) {
+    menuBtn.addEventListener("click", () => mainNav.classList.toggle("active"));
+  }
+
+  // ----- Service worker registration -----
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(reg => console.log("Service worker registered:", reg))
+      .catch(err => console.error("Service worker failed:", err));
+  }
+
+  // ----- PWA install prompt -----
+  let deferredPrompt = null;
+  const installBtn = document.getElementById("installBtn");
+
+  window.addEventListener("beforeinstallprompt", e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.hidden = false;
+  });
+
+  installBtn.addEventListener("click", async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const result = await deferredPrompt.userChoice;
+    console.log("Install prompt outcome:", result.outcome);
+    deferredPrompt = null;
+    installBtn.hidden = true;
+  });
+
+  // ----- Push notifications -----
+  const enablePushBtn = document.getElementById("enablePush");
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+  }
+
+  async function subscribeForPush(username) {
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") return;
+
+  const reg = await navigator.serviceWorker.ready;
+
+  // Fetch VAPID key from backend
+  const response = await fetch('https://api.clmilkshake.cc/push/getKey');
+  const vapidPublicKey = await response.text();
+
+  const subscription = await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+  });
+
+  // Send subscription to backend with username
+  await fetch('https://api.clmilkshake.cc/push/subscribe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({
+      username: username,   // <-- add username here
+      subscription: subscription
+    })
+  });
+
+  console.log('Push subscription sent for user:', username);
+}
+
+
+  enablePushBtn.addEventListener("click", async () => {
+  try {
+    const user = await getMyProfile();
+    await subscribeForPush(user.username);
+  } catch (err) {
+    console.error("Cannot subscribe for push:", err);
+  }
+});
+
+const disablePushBtn = document.getElementById("disablePush");
+
+disablePushBtn.addEventListener("click", async () => {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const subscription = await reg.pushManager.getSubscription();
+
+    if (!subscription) {
+      alert("You are not currently subscribed to notifications.");
+      return;
+    }
+
+    // Unsubscribe from push
+    const unsubscribed = await subscription.unsubscribe();
+    if (unsubscribed) {
+      console.log("Successfully unsubscribed from push notifications.");
+    }
+
+    // Notify backend to remove subscription from database
+    await fetch('https://api.clmilkshake.cc/push/unsubscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ username: YOUR_USERNAME_HERE }) // replace with actual username
+    });
+
+    alert("Notifications have been disabled.");
+  } catch (err) {
+    console.error("Failed to unsubscribe:", err);
+    alert("Failed to disable notifications.");
+  }
+});
+});
   
   </script>
 </body>

@@ -125,7 +125,7 @@ window.addEventListener("DOMContentLoaded", checkIfSignedIn);
     const username = document.getElementById("signupUsername").value.trim();
     const name = document.getElementById("signupName").value.trim();
     const password = document.getElementById("signupPassword").value.trim();
-    const avatarFile = document.getElementById("signupAvatar").files[0];
+    //const avatarFile = document.getElementById("signupAvatar").files[0];
     const signupCode = document.getElementById("signupCode").value.trim();
 
     if (!username || !name || !password) {
@@ -139,7 +139,7 @@ window.addEventListener("DOMContentLoaded", checkIfSignedIn);
     formData.append("password", password);
     formData.append("signup_code", signupCode);
 
-    if (avatarFile) formData.append("avatar", avatarFile);
+    //if (avatarFile) formData.append("avatar", avatarFile);
     
 
     try {
