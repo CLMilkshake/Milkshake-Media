@@ -313,42 +313,42 @@
     window.addEventListener("DOMContentLoaded", loadProfile);
 
   async function AddFriend() {
-    // Add Friend If Not Own Profile
-    const user = await getMyProfile();
-    const code = user.id;
-    console.log(code);
-    const status = document.getElementById("addFriendStatus");
+  const user = await getMyProfile();
+  const code = user.id;
+  console.log(code);
 
-    if (!code) {
-      status.innerText = "Enter a profile code";
-      return;
+  const status = document.getElementById("addFriendStatus");
+
+  if (!code) {
+    status.innerText = "Enter a profile code";
+    return;
+  }
+
+  try {
+    const res = await fetch("https://api.clmilkshake.cc/friends/add", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to send friend request");
     }
-    try {
-      const res = await fetch("https://api.clmilkshake.cc/friends/add", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code })
-      });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert("And error occured :(" + err)
-        return;
-      }
-
-      // Optional: refresh friends list
-      if (typeof loadFriends === "function") {
-        loadFriends();
-      }
-      alert("Sent a friend request!")
-
-    } catch (err) {
-      alert("And error occured :(" + err)
-      console.error(err);
+    if (typeof loadFriends === "function") {
+      loadFriends();
     }
-  };
+
+    alert("Sent a friend request!");
+  } catch (err) {
+    console.error(err);
+    alert("An error occurred: " + err.message);
+  }
+}
+
 let cachedProfile = null;
 
   async function getMyProfile() {
