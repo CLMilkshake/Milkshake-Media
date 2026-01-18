@@ -255,6 +255,7 @@
     }
 }
 
+
     // Save profile changes
     document.getElementById("saveProfile").addEventListener("click", async () => {
       const name = document.getElementById("editName").value.trim();
@@ -393,19 +394,91 @@ async function getViewedProfile() {
   document.addEventListener("DOMContentLoaded", () => {
 
 
-  // ----- Menu toggle -----
-  const menuBtn = document.getElementById("menuBtn");
-  const mainNav = document.getElementById("menu");
-  if (menuBtn && mainNav) {
-    menuBtn.addEventListener("click", () => mainNav.classList.toggle("active"));
-  }
-
   // ----- Service worker registration -----
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/service-worker.js')
       .then(reg => console.log("Service worker registered:", reg))
       .catch(err => console.error("Service worker failed:", err));
   }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const menuBtn = document.getElementById("menuBtn");
+    const mainNav = document.getElementById("menu");
+
+    if (!menuBtn || !mainNav) return;
+
+    menuBtn.addEventListener("click", () => {
+      mainNav.classList.toggle("active");
+    });
+
+  const notifBtn = document.getElementById("notifBtn");
+  const notifDropdown = document.getElementById("notifDropdown");
+  const notifBadge = document.getElementById("notifBadge");
+
+  async function loadNotifications() {
+    try {
+      const res = await fetch("https://api.clmilkshake.cc/notifications", { credentials: "include" });
+      if (!res.ok) return;
+
+      const notifs = await res.json();
+      notifDropdown.innerHTML = "";
+
+      const unreadCount = notifs.filter(n => !n.is_read).length;
+      if (unreadCount > 0) {
+        notifBadge.innerText = unreadCount;
+        notifBadge.classList.remove("hidden");
+      } else {
+        notifBadge.classList.add("hidden");
+      }
+
+      notifs.forEach(n => {
+        const div = document.createElement("div");
+        div.className = "notif-item" + (!n.is_read ? " unread" : "");
+        div.innerText = `${n.actor}: ${n.type} • ${n.time}`;
+
+        div.onclick = async () => {
+          if (n.description) {
+            window.location.href = `notification.html?post_id=${n.id}`;
+          }
+          await fetch(`https://api.clmilkshake.cc/notifications/read/${n.id}`, { method: "POST", credentials: "include" });
+          loadNotifications();
+        };
+        notifDropdown.appendChild(div);
+      });
+
+    } catch (err) {
+      console.error("Failed to load notifications:", err);
+    }
+  }
+
+  notifBtn?.addEventListener("click", async () => {
+    notifDropdown.classList.toggle("hidden");
+    await loadNotifications();
+  });
+
+  loadNotifications(); // initial load
+
+  document.addEventListener("click", (e) => {
+    if (!notifDropdown.classList.contains("hidden") && !notifDropdown.contains(e.target) && e.target !== notifBtn) {
+      notifDropdown.classList.add("hidden");
+    }
+  });
+
+  // ----- Admin nav -----
+  const navContainer = document.getElementById("adminContainer");
+  if (navContainer) {
+    getMyProfile().then(user => {
+      if (user?.is_admin) {
+          const adminNav = document.createElement("nav");
+          adminNav.className = "admin-page";
+          adminNav.innerHTML = `<a href="admin.html"><h4 style="color: rgb(255,140,140); padding:10px; border-radius:10px;">Admins</h4></a>`;
+          navContainer.appendChild(adminNav);
+        }
+      })
+      .catch(err => console.error("Error checking admin status:", err));
+  }
+  });
+
 
   // ----- PWA install prompt -----
   let deferredPrompt = null;
