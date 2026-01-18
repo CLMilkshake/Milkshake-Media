@@ -313,16 +313,14 @@
     window.addEventListener("DOMContentLoaded", loadProfile);
 
   async function AddFriend() {
-  const user = await getMyProfile();
-  const code = user.id;
-  console.log(code);
-
-  const status = document.getElementById("addFriendStatus");
-
-  if (!code) {
-    status.innerText = "Enter a profile code";
+  const viewedUser = await getViewedProfile();
+  if (!viewedUser) {
+    alert("No user selected");
     return;
   }
+
+  const code = viewedUser.id; // ← THIS is the fix
+  console.log("Adding friend:", code);
 
   try {
     const res = await fetch("https://api.clmilkshake.cc/friends/add", {
@@ -338,10 +336,6 @@
       throw new Error(data.error || "Failed to send friend request");
     }
 
-    if (typeof loadFriends === "function") {
-      loadFriends();
-    }
-
     alert("Sent a friend request!");
   } catch (err) {
     console.error(err);
@@ -349,20 +343,42 @@
   }
 }
 
+
 let cachedProfile = null;
 
-  async function getMyProfile() {
-    if (cachedProfile) return cachedProfile;
+function getViewedUsername() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("username");
+}
 
-    const res = await fetch("https://api.clmilkshake.cc/profile", {
-      credentials: "include"
-    });
 
-    if (!res.ok) return null;
+async function getMyProfile() {
+  if (cachedMyProfile) return cachedMyProfile;
 
-    cachedProfile = await res.json();
-    return cachedProfile;
-  }
+  const res = await fetch("https://api.clmilkshake.cc/profile", {
+    credentials: "include"
+  });
+
+  if (!res.ok) return null;
+
+  cachedMyProfile = await res.json();
+  return cachedMyProfile;
+}
+
+async function getViewedProfile() {
+  const username = getViewedUsername();
+  if (!username) return null;
+
+  const res = await fetch(
+    `https://api.clmilkshake.cc/profile?username=${encodeURIComponent(username)}`,
+    { credentials: "include" }
+  );
+
+  if (!res.ok) return null;
+  return await res.json();
+}
+
+
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', async () => {
