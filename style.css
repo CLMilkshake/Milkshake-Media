@@ -645,6 +645,9 @@ tr {
     flex-direction: column;
     justify-content: space-between;
   }
+  .profile-card {
+    margin: 0vw;
+  }
 
   .r-avatar {
     width: 40px;
